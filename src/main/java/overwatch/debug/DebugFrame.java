@@ -1,14 +1,11 @@
 package overwatch.debug;
 
-import overwatch.Image;
 import overwatch.model.Capture;
-import overwatch.model.ProcessedZone;
+import overwatch.model.ProcessableZone;
 import overwatch.model.Zone;
-import overwatch.service.ImageService;
 
 import javax.swing.*;
 import java.awt.*;
-import java.awt.image.ImageObserver;
 
 public class DebugFrame extends JFrame {
 
@@ -22,10 +19,10 @@ public class DebugFrame extends JFrame {
             super.paintComponent(g);
             g.setColor(Color.BLACK);
             for(Zone zone : zones) {
-                ProcessedZone processedZone = new ProcessedZone(zone);
+                ProcessableZone processableZone = new ProcessableZone(zone);
                 for(int x = 1; x <= zone.width; x++){
                     for (int y = 1; y <= zone.height; y++) {
-                        if(processedZone.isModified(x,y))
+                        if(processableZone.isModified(x,y))
                             g.drawRect(zone.offsetX +x , zone.offsetY + y, 1 , 1);
                     }
                 }
