@@ -5,7 +5,7 @@ import java.nio.Buffer;
 
 public class Image {
 
-    private final BufferedImage source;
+    public final BufferedImage source;
 
     public Image(BufferedImage source) {
         this.source = source;

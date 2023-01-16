@@ -9,7 +9,7 @@ public class ProcessedZone {
     private static final short MODIFIED = 1;
     private static final short UNMODIFIED = 2;
 
-    private static final float BRIGHTNESS_DELTA = 0.2f;
+    private static final float BRIGHTNESS_DELTA = 0.10f;
 
     private final short [] pixelStates;
     public final Zone zone;
@@ -22,7 +22,7 @@ public class ProcessedZone {
     }
 
     public boolean isModified(int x, int y){
-        int index = x + (y-1) * zone.width;
+        int index = (x-1) + (y-1) * zone.width;
         if (pixelStates[index] == UNSET){
             return processedPixel(x,y,index);
 

@@ -3,10 +3,13 @@ package overwatch;
 import overwatch.debug.DebugFrame;
 import overwatch.model.Capture;
 import overwatch.model.Zone;
+import overwatch.service.ImageService;
 
 public class Application {
 
     public static void main (String[] args) {
+
+
 
         Capture capture = new Capture(0,0,800,400, Constants.VIRTUAL_CAMERA_NAME);
         Zone z1 = new Zone(1, 0,0, 200,200, capture);
@@ -21,6 +24,9 @@ public class Application {
         Zone[] zones = new Zone[]{
                 z1,z2,z3,z4,z5,z6,z7,z8
         };
+
+        ImageService.updateSourceImage(capture);
+        ImageService.updateCurrentImage(capture);
 
         DebugFrame frame = new DebugFrame(capture, zones);
 
