@@ -10,8 +10,10 @@ import java.util.logging.Logger;
  */
 public class Configuration {
 
-    interface Keys {
+    public interface Keys {
         String SERVER_PORT = "server-port";
+
+        String IMAGE_BASE_PATH = "/tmp/";
     }
 
     private static final String CONFIGURATION_PATH = "src/main/resources/application.properties";
@@ -37,11 +39,10 @@ public class Configuration {
     /**
      * Liest eine Eigenschaft anhand eines Schlüssels.
      * @param key Der zu lesende Schlüssel.
-     * @param defaultValue Ein Ersatzwert, sollte der übergebene Schlüssel nicht vorhanden sein.
-     * @return Gibt den verknüpften Wert oder den Ersatzwert zurück.
+     * @return Gibt den verknüpften Wert oder einen leeren String zurück.
      */
-    public static String getString(String key, String defaultValue) {
-        return properties.getProperty(key, defaultValue);
+    public static String getString(String key) {
+        return properties.getProperty(key, "");
     }
 
     /**

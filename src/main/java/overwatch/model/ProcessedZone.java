@@ -35,8 +35,8 @@ public class ProcessedZone {
             return pixelStates[index] == MODIFIED;
         }
 
-        Image sourceImage = ImageService.readBackgroundImage(zone.capture);
-        Image currentImage = ImageService.readImage(zone.capture);
+        Image sourceImage = ImageService.readSourceImage(zone.capture);
+        Image currentImage = ImageService.readCurrentImage(zone.capture);
 
         int offSetX = zone.offsetX + x;
         int offSetY = zone.offsetY + y;
