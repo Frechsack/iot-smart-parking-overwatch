@@ -3,8 +3,13 @@ package overwatch.model;
 import overwatch.Image;
 import overwatch.service.ImageService;
 
+import java.util.Arrays;
+
 public class ProcessableZone extends Zone {
 
+    /**
+     * Wichtig: Muss null entsprechen, weil null als default für shorts gilt und auf diese Logik zurückgegriffen wird.
+     */
     private static final short UNSET = 0;
     private static final short MODIFIED = 1;
     private static final short UNMODIFIED = 2;
@@ -23,17 +28,19 @@ public class ProcessableZone extends Zone {
         this.pixelStates = new short[width * height];
     }
 
-
+    public void reset(){
+        Arrays.fill(pixelStates, (short) 0);
+    }
 
     public boolean isModified(int x, int y){
-        int index = (x-1) + (y-1) * width;
+        int index = x + y * width;
         if (pixelStates[index] == UNSET){
-            return processedPixel(x,y,index);
+            return processPixel(x,y,index);
         }
         return pixelStates[index] == MODIFIED;
     }
 
-    private synchronized boolean processedPixel(int x, int y, int index){
+    private boolean processPixel(int x, int y, int index){
         if (pixelStates[index] != UNSET) {
             return pixelStates[index] == MODIFIED;
         }
