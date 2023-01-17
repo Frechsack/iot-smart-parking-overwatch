@@ -28,7 +28,7 @@ public class Application {
         ImageService.updateSourceImage(capture);
         ImageService.updateCurrentImage(capture);
 
-        DebugFrame frame = new DebugFrame(capture, zones);
+        DebugFrame debugFrame = new DebugFrame(capture, zones);
 
 
 

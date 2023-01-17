@@ -10,9 +10,8 @@ import java.awt.*;
 
 public class DebugFrame extends JFrame {
 
+    // TODO: Mehrere Caputures anzeigen.
     private final Capture capture;
-    private final Zone[] zones;
-
     private final ProcessableZone[] processableZones;
 
     private class RootPanel extends JPanel {
@@ -21,9 +20,10 @@ public class DebugFrame extends JFrame {
         protected void paintComponent(Graphics g) {
             super.paintComponent(g);
             for(ProcessableZone processableZone : processableZones) {
-                g.setColor(Color.orange);
+                g.setColor(Color.blue);
                 g.drawRect(processableZone.absoluteXStart, processableZone.absoluteYStart, processableZone.width, processableZone.height);
-
+                g.setFont(Font.getFont("Arial"));
+                g.drawString(Integer.toString(processableZone.nr), processableZone.absoluteXStart + 8, processableZone.absoluteYStart + 16);
 
                 g.setColor(Color.BLACK);
                 for(int x = 0; x < processableZone.width; x++){
@@ -38,7 +38,6 @@ public class DebugFrame extends JFrame {
                 g.setColor(Color.RED);
                 g.drawRect(absoluteMinX, absoluteMinY, absoluteMaxX - absoluteMinX, absoluteMaxY - absoluteMinY);
 
-
                 positions = ObjectAnalyserService.findOuterBounds(60,50, processableZone, processableZones);
                 absoluteMinX = positions[0];
                 absoluteMinY = positions[1];
@@ -46,7 +45,7 @@ public class DebugFrame extends JFrame {
                 absoluteMaxY = positions[3];
                 g.setColor(Color.RED);
                 g.drawRect(absoluteMinX, absoluteMinY, absoluteMaxX - absoluteMinX, absoluteMaxY - absoluteMinY);
-                //}
+
             }
         }
     }
@@ -54,12 +53,11 @@ public class DebugFrame extends JFrame {
     public DebugFrame (Capture capture, Zone[] zones){
         super();
         this.capture = capture;
-        this.zones = zones;
         this.processableZones = new ProcessableZone[zones.length];
         for (int i = 0; i < zones.length; i++)
             this.processableZones[i] = new ProcessableZone(zones[i]);
 
-        setSize(capture.width, capture.height);
+        setSize(capture.width + 2, capture.height + 40);
         RootPanel root = new RootPanel();
         root.setBounds(0, 0, capture.width, capture.height);
         setContentPane(root);
