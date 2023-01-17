@@ -6,16 +6,17 @@ import overwatch.Image;
 import overwatch.model.Capture;
 
 import javax.imageio.ImageIO;
-import java.awt.image.BufferedImage;
 import java.io.File;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Logger;
 
+/**
+ * Statische Methoden zum Ein- und auslesen von Bildern.
+ */
 public class ImageService {
 
     private static final Logger logger = Logger.getLogger(ImageService.class.getName());
-
     private static final Map<String, Image> sourceImageMap = new ConcurrentHashMap<>();
     private static final Map<String, Image> currentImageMap = new ConcurrentHashMap<>();
 
@@ -33,26 +34,32 @@ public class ImageService {
             final var command = new String[]{ "fswebcam", "-d", capture.deviceName, "--png", "1", "-q", imagePath };
             Runtime.getRuntime().exec(command).waitFor();
         }
-        return new Image(ImageIO.read(new File(imagePath)));
+        return new Image.BackedImage(ImageIO.read(new File(imagePath)));
     }
 
     private static Image createBlank(int width, int height) {
-        return new Image(new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB));
+        return new Image.BlankImage(width, height);
     }
 
+    /**
+     * Liest den Bildspeicher für das Quellbild erneut ein.
+     * @param capture Das Videogerät für den Einlesevorgang.
+     */
     public static void updateSourceImage(Capture capture){
         try {
             sourceImageMap.put(capture.deviceName, readImageFromIO(capture, true));
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             logger.severe(e.getMessage());
-            if(sourceImageMap.containsKey(capture.deviceName)) return;
+            if (sourceImageMap.containsKey(capture.deviceName)) return;
 
             sourceImageMap.put(capture.deviceName, createBlank(capture.width, capture.height));
-
         }
     }
 
+    /**
+     * Liest den Bildspeicher für das aktuelle Referenzbild erneut ein.
+     * @param capture Das Videogerät für den Einlesevorgang.
+     */
     public static void updateCurrentImage(Capture capture) {
         try {
             currentImageMap.put(capture.deviceName, readImageFromIO(capture, false));
@@ -65,11 +72,23 @@ public class ImageService {
         }
     }
 
+    /**
+     * Liest das aktuelle Referenzbild aus. Sollte noch kein Bild angelegt worden sein, wird ein Schwarzes Bild in passender Größer ausgegeben.
+     * @param capture Das verknüpfte Videogerät.
+     * @return Gibt das aktuelle Referenzbild aus.
+     */
     public static Image readCurrentImage(Capture capture){
-        return currentImageMap.get(capture.deviceName);
+        Image image = currentImageMap.get(capture.deviceName);
+        return image == null ? createBlank(capture.width, capture.height) : image;
     }
 
+    /**
+     * Liest das aktuelle Quellbild aus. Sollte noch kein Bild angelegt worden sein, wird ein Schwarzes Bild in passender Größer ausgegeben.
+     * @param capture Das verknüpfte Videogerät.
+     * @return Gibt das aktuelle Referenzbild aus.
+     */
     public static Image readSourceImage(Capture capture){
-        return sourceImageMap.get(capture.deviceName);
+        Image image = sourceImageMap.get(capture.deviceName);
+        return image == null ? createBlank(capture.width, capture.height) : image;
     }
 }
