@@ -21,7 +21,7 @@ public class RunForPixelServiceTest {
         ImageService.updateSourceImage(capture);
 
 
-        Assert.assertEquals(60, RunForPixelsService.walkRight(5, 60, zones, d, d));
+        Assert.assertEquals(60, RunForPixelsService.walkRight(5, 60, zones, capture, d));
 
 
     }
@@ -38,7 +38,7 @@ public class RunForPixelServiceTest {
         ImageService.updateCurrentImage(capture);
         ImageService.updateSourceImage(capture);
 
-        Assert.assertEquals(60, RunForPixelsService.walkLeft(5, 60, zones, d, d));
+        Assert.assertEquals(60, RunForPixelsService.walkLeft(5, 60, zones, d));
     }
 
 
