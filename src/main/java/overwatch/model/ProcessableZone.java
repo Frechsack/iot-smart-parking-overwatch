@@ -29,7 +29,6 @@ public class ProcessableZone extends Zone {
         int index = (x-1) + (y-1) * width;
         if (pixelStates[index] == UNSET){
             return processedPixel(x,y,index);
-
         }
         return pixelStates[index] == MODIFIED;
     }

@@ -16,7 +16,4 @@ public class Capture {
     }
 
     public final String deviceName;
-
-
-
 }
