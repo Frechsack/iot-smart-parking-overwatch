@@ -22,14 +22,17 @@ public class ImageService {
     private ImageService() {}
 
     private static Image readImageFromIO(Capture capture, boolean isSourceImage) throws Exception {
-        final var imagePath = !Constants.VIRTUAL_CAMERA_NAME.equals(capture.deviceName)
+        boolean isVirtual = Constants.VIRTUAL_CAMERA_NAME.equals(capture.deviceName);
+        final var imagePath = !isVirtual
                 ? Configuration.getString(Configuration.Keys.IMAGE_BASE_PATH) + "/" +  capture.deviceName + ".png"
                 : isSourceImage
                     ? "src/main/resources/ImageSource.png"
                     : "src/main/resources/ImageCurrent.png";
-        // TODO: Pfad
-        final var command = new String[]{ "fswebcam", "-d", capture.deviceName, "--png", "1", "-q", imagePath };
-        Runtime.getRuntime().exec(command).waitFor();
+
+        if(!isVirtual) {
+            final var command = new String[]{ "fswebcam", "-d", capture.deviceName, "--png", "1", "-q", imagePath };
+            Runtime.getRuntime().exec(command).waitFor();
+        }
         return new Image(ImageIO.read(new File(imagePath)));
     }
 

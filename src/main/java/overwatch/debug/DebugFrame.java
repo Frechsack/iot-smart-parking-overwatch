@@ -3,6 +3,7 @@ package overwatch.debug;
 import overwatch.model.Capture;
 import overwatch.model.ProcessableZone;
 import overwatch.model.Zone;
+import overwatch.service.RunForPixelsService;
 
 import javax.swing.*;
 import java.awt.*;
@@ -26,6 +27,7 @@ public class DebugFrame extends JFrame {
                             g.drawRect(zone.offsetX +x , zone.offsetY + y, 1 , 1);
                     }
                 }
+                int[] positions = RunForPixelsService.findOuterBounds(0,0, processableZone,)
             }
         }
     }

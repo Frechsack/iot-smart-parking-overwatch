@@ -32,7 +32,7 @@ public class ZoneService {
 
     public static <E extends Zone> E findZoneForPixel(final int absoluteX, final int absoluteY, final E[] zones ){
         for(E zone : zones) {
-            if (zone.absoluteXStart <= absoluteX && zone.absoluteXEnd > absoluteX && zone.absoluteYStart <= absoluteY && zone.absoluteYEnd > absoluteY)
+            if (zone.absoluteXStart <= absoluteX && zone.absoluteXEnd >= absoluteX && zone.absoluteYStart <= absoluteY && zone.absoluteYEnd >= absoluteY)
                 return zone;
         }
         throw new IllegalArgumentException("There is no matching zone for coordinates x: '" + absoluteX + "' y: '" + absoluteY + "'");
@@ -49,13 +49,13 @@ public class ZoneService {
      * @param <E> Class-type von {@link Zone}.
      */
     public static PixelState calculatePixelState(final int absoluteX, final int absoluteY, final ProcessableZone[] zones, final ProcessableZone shortcut){
-        if(shortcut != null && shortcut.absoluteXStart <= absoluteX && shortcut.absoluteXEnd > absoluteX && shortcut.absoluteYStart <= absoluteY && shortcut.absoluteYEnd > absoluteY)
+        if(shortcut != null && shortcut.absoluteXStart <= absoluteX && shortcut.absoluteXEnd >= absoluteX && shortcut.absoluteYStart <= absoluteY && shortcut.absoluteYEnd >= absoluteY)
             return shortcut.isModified(absoluteX - shortcut.absoluteXStart, absoluteY - shortcut.absoluteYStart)
                 ? PixelState.MODIFIED
                 : PixelState.UNMODIFIED;
 
         for(ProcessableZone zone : zones) {
-            if (zone.absoluteXStart <= absoluteX && zone.absoluteXEnd > absoluteX && zone.absoluteYStart <= absoluteY && zone.absoluteYEnd > absoluteY)
+            if (zone.absoluteXStart <= absoluteX && zone.absoluteXEnd >= absoluteX && zone.absoluteYStart <= absoluteY && zone.absoluteYEnd >= absoluteY)
                 return zone.isModified(absoluteX - zone.absoluteXStart, absoluteY - zone.absoluteYStart)
                         ? PixelState.MODIFIED_ZONE_CHANGE
                         : PixelState.UNMODIFIED_ZONE_CHANGE;

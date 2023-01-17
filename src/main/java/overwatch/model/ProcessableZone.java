@@ -9,7 +9,7 @@ public class ProcessableZone extends Zone {
     private static final short MODIFIED = 1;
     private static final short UNMODIFIED = 2;
 
-    private static final float BRIGHTNESS_DELTA = 0.10f;
+    private static final float BRIGHTNESS_DELTA = 0.01f;
 
     private final short [] pixelStates;
 
