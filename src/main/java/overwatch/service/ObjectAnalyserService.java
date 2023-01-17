@@ -14,6 +14,8 @@ public class ObjectAnalyserService {
      */
     private static final int INTERSECTION_THRESHOLD = 2;
 
+    private ObjectAnalyserService() {}
+
     /**
      * Läuft entlang der x-Achse nach rechts, solange bis auf eine Reihe von nicht mutierten Pixeln gestoßen wird.
      * @param absoluteY Der Startpunkt auf der y-Achse in Absoluten Koordinaten.
