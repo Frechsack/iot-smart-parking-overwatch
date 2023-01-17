@@ -4,6 +4,9 @@ import org.jetbrains.annotations.Nullable;
 import overwatch.model.Capture;
 import overwatch.model.ProcessableZone;
 
+/**
+ * Enthält statische Methoden für die Objekterkennung.
+ */
 public class RunForPixelsService {
 
     /**
@@ -66,7 +69,7 @@ public class RunForPixelsService {
             if(pixelState.isZoneChanged)
                 zoneShortcut = ZoneService.findZoneForPixel(absoluteX, absoluteY, zones);
             if(pixelState.isModified && pixelState.isExisting){
-                continue XLoop;
+                continue;
             }
             else {
                 for(int offsetX = 1; offsetX <= INTERSECTION_THRESHOLD && (absoluteX - offsetX) >= 0; offsetX++ ) {
