@@ -1,7 +1,6 @@
 package overwatch.service;
 
 import overwatch.Configuration;
-import overwatch.Constants;
 import overwatch.Image;
 import overwatch.model.Capture;
 
@@ -23,7 +22,7 @@ public class ImageService {
     private ImageService() {}
 
     private static Image readImageFromIO(Capture capture, boolean isSourceImage) throws Exception {
-        boolean isVirtual = Constants.VIRTUAL_CAMERA_NAME.equals(capture.deviceName);
+        boolean isVirtual = capture.isVirtual();
         final var imagePath = !isVirtual
                 ? Configuration.getString(Configuration.Keys.IMAGE_BASE_PATH) + "/" +  capture.deviceName + ".png"
                 : isSourceImage

@@ -11,7 +11,7 @@ public class Application {
 
 
 
-        Capture capture = new Capture(0,0,800,400, Constants.VIRTUAL_CAMERA_NAME);
+        Capture capture = new Capture(0,0,800,400, Capture.VIRTUAL_CAMERA_NAME);
         Zone z1 = new Zone(1, 0,0, 200,200, capture);
         Zone z2 = new Zone(2, 200,0, 200,200, capture);
         Zone z3 = new Zone(3, 400,0, 200,200, capture);

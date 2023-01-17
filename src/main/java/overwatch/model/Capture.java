@@ -6,6 +6,8 @@ package overwatch.model;
 @SuppressWarnings("ClassCanBeRecord")
 public final class Capture {
 
+    public static String VIRTUAL_CAMERA_NAME = "Virtual";
+
     /**
      * Die virtuelle Positionierung des Bildes im Parkhaus auf der x-Achse.
      */
@@ -38,4 +40,8 @@ public final class Capture {
      * Der Name des Videogerätes.
      */
     public final String deviceName;
+
+    public boolean isVirtual(){
+        return VIRTUAL_CAMERA_NAME.equals(deviceName);
+    }
 }

@@ -2,7 +2,6 @@ package overwatch.service;
 
 import org.junit.Assert;
 import org.junit.Test;
-import overwatch.Constants;
 import overwatch.model.Capture;
 import overwatch.model.ProcessableZone;
 
@@ -10,7 +9,7 @@ public class ZoneServiceTest {
 
     @Test
     public void north(){
-        Capture capture = new Capture(0, 0, 1920, 1080, Constants.VIRTUAL_CAMERA_NAME);
+        Capture capture = new Capture(0, 0, 1920, 1080, Capture.VIRTUAL_CAMERA_NAME);
         ProcessableZone a = new ProcessableZone(1, 0,0,500, 300, capture);
         ProcessableZone b = new ProcessableZone(2, 500,0,500, 300, capture);
         ProcessableZone c = new ProcessableZone(3, 0,300,1000, 300, capture);
@@ -25,7 +24,7 @@ public class ZoneServiceTest {
 
     @Test
     public void south(){
-        Capture capture = new Capture(0, 0, 1920, 1080, Constants.VIRTUAL_CAMERA_NAME);
+        Capture capture = new Capture(0, 0, 1920, 1080, Capture.VIRTUAL_CAMERA_NAME);
         ProcessableZone a = new ProcessableZone(1, 0,0,500, 300, capture);
         ProcessableZone b = new ProcessableZone(2, 500,0,500, 300, capture);
         ProcessableZone c = new ProcessableZone(3, 0,300,1000, 300, capture);
@@ -41,7 +40,7 @@ public class ZoneServiceTest {
 
     @Test
     public void east(){
-        Capture capture = new Capture(0, 0, 1920, 1080, Constants.VIRTUAL_CAMERA_NAME);
+        Capture capture = new Capture(0, 0, 1920, 1080, Capture.VIRTUAL_CAMERA_NAME);
         ProcessableZone a = new ProcessableZone(1, 0,0,500, 300, capture);
         ProcessableZone b = new ProcessableZone(2, 500,0,500, 300, capture);
         ProcessableZone c = new ProcessableZone(3, 0,300,1000, 300, capture);
@@ -57,7 +56,7 @@ public class ZoneServiceTest {
 
     @Test
     public void west(){
-        Capture capture = new Capture(0, 0, 1920, 1080, Constants.VIRTUAL_CAMERA_NAME);
+        Capture capture = new Capture(0, 0, 1920, 1080, Capture.VIRTUAL_CAMERA_NAME);
         ProcessableZone a = new ProcessableZone(1, 0,0,500, 300, capture);
         ProcessableZone b = new ProcessableZone(2, 500,0,500, 300, capture);
         ProcessableZone c = new ProcessableZone(3, 0,300,1000, 300, capture);

@@ -3,7 +3,7 @@ package overwatch.debug;
 import overwatch.model.Capture;
 import overwatch.model.ProcessableZone;
 import overwatch.model.Zone;
-import overwatch.service.RunForPixelsService;
+import overwatch.service.ObjectAnalyserService;
 
 import javax.swing.*;
 import java.awt.*;
@@ -33,13 +33,13 @@ public class DebugFrame extends JFrame {
                     }
                 }
 
-                int[] positions = RunForPixelsService.findOuterBounds(120,140, processableZone, processableZones);
+                int[] positions = ObjectAnalyserService.findOuterBounds(120,140, processableZone, processableZones);
                 int absoluteMinX = positions[0], absoluteMinY = positions[1], absoluteMaxX = positions[2], absoluteMaxY = positions[3];
                 g.setColor(Color.RED);
                 g.drawRect(absoluteMinX, absoluteMinY, absoluteMaxX - absoluteMinX, absoluteMaxY - absoluteMinY);
 
 
-                positions = RunForPixelsService.findOuterBounds(60,50, processableZone, processableZones);
+                positions = ObjectAnalyserService.findOuterBounds(60,50, processableZone, processableZones);
                 absoluteMinX = positions[0];
                 absoluteMinY = positions[1];
                 absoluteMaxX = positions[2];

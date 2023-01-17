@@ -7,7 +7,7 @@ import overwatch.model.ProcessableZone;
 /**
  * Enthält statische Methoden für die Objekterkennung.
  */
-public class RunForPixelsService {
+public class ObjectAnalyserService {
 
     /**
      * Konstante, welche angibt wie viele Pixel beim durchlauf nach links und rechts ignoriert werden, sollten sie nicht mutiert sein.

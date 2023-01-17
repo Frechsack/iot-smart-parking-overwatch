@@ -2,7 +2,6 @@ package overwatch.service;
 
 import org.junit.Assert;
 import org.junit.Test;
-import overwatch.Constants;
 import overwatch.model.Capture;
 import overwatch.model.ProcessableZone;
 
@@ -10,7 +9,7 @@ public class RunForPixelServiceTest {
 
     @Test
     public void walkRight(){
-        Capture capture = new Capture(0,0, 100, 100, Constants.VIRTUAL_CAMERA_NAME);
+        Capture capture = new Capture(0,0, 100, 100, Capture.VIRTUAL_CAMERA_NAME);
         ProcessableZone a = new ProcessableZone(1,0,0, 20,100, capture);
         ProcessableZone b = new ProcessableZone(1,20,0, 20,100, capture);
         ProcessableZone c = new ProcessableZone(1,40,0, 20,100, capture);
@@ -21,14 +20,14 @@ public class RunForPixelServiceTest {
         ImageService.updateSourceImage(capture);
 
 
-        Assert.assertEquals(60, RunForPixelsService.walkRight(5, 60, zones, capture, d));
+        Assert.assertEquals(60, ObjectAnalyserService.walkRight(5, 60, zones, capture, d));
 
 
     }
 
     @Test
     public void walkLeft(){
-        Capture capture = new Capture(0,0, 100, 100, Constants.VIRTUAL_CAMERA_NAME);
+        Capture capture = new Capture(0,0, 100, 100, Capture.VIRTUAL_CAMERA_NAME);
         ProcessableZone a = new ProcessableZone(1,0,0, 20,100, capture);
         ProcessableZone b = new ProcessableZone(1,20,0, 20,100, capture);
         ProcessableZone c = new ProcessableZone(1,40,0, 20,100, capture);
@@ -38,7 +37,7 @@ public class RunForPixelServiceTest {
         ImageService.updateCurrentImage(capture);
         ImageService.updateSourceImage(capture);
 
-        Assert.assertEquals(60, RunForPixelsService.walkLeft(5, 60, zones, d));
+        Assert.assertEquals(60, ObjectAnalyserService.walkLeft(5, 60, zones, d));
     }
 
 
