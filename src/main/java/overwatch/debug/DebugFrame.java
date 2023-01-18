@@ -1,12 +1,15 @@
 package overwatch.debug;
 
+import overwatch.Bounds;
 import overwatch.model.Capture;
 import overwatch.model.ProcessableZone;
 import overwatch.model.Zone;
+import overwatch.service.AllroundAnalyzerService;
 import overwatch.service.ObjectAnalyserService;
 
 import javax.swing.*;
 import java.awt.*;
+import java.util.Arrays;
 
 public class DebugFrame extends JFrame {
 
@@ -15,11 +18,16 @@ public class DebugFrame extends JFrame {
     private final ProcessableZone[] processableZones;
 
     private class RootPanel extends JPanel {
-
+        Zone[] z = AllroundAnalyzerService.zoneWithObject(processableZones);
         @Override
         protected void paintComponent(Graphics g) {
             super.paintComponent(g);
+
             for(ProcessableZone processableZone : processableZones) {
+                g.setColor(Color.green);
+                if(Arrays.stream(z).anyMatch(it->it.nr==processableZone.nr)){
+                    g.fillRect(processableZone.absoluteXStart, processableZone.absoluteYStart, processableZone.width, processableZone.height);
+                }
                 g.setColor(Color.blue);
                 g.drawRect(processableZone.absoluteXStart, processableZone.absoluteYStart, processableZone.width, processableZone.height);
                 g.setFont(Font.getFont("Arial"));
@@ -33,18 +41,17 @@ public class DebugFrame extends JFrame {
                     }
                 }
 
-                int[] positions = ObjectAnalyserService.findOuterBounds(120,140, processableZone, processableZones);
-                int absoluteMinX = positions[0], absoluteMinY = positions[1], absoluteMaxX = positions[2], absoluteMaxY = positions[3];
+                Bounds bounds = ObjectAnalyserService.findOuterBounds(120,140, processableZone, processableZones);
                 g.setColor(Color.RED);
-                g.drawRect(absoluteMinX, absoluteMinY, absoluteMaxX - absoluteMinX, absoluteMaxY - absoluteMinY);
+                g.drawRect(bounds.x(), bounds.y(), bounds.width(), bounds.height());
 
-                positions = ObjectAnalyserService.findOuterBounds(60,50, processableZone, processableZones);
-                absoluteMinX = positions[0];
-                absoluteMinY = positions[1];
-                absoluteMaxX = positions[2];
-                absoluteMaxY = positions[3];
-                g.setColor(Color.RED);
-                g.drawRect(absoluteMinX, absoluteMinY, absoluteMaxX - absoluteMinX, absoluteMaxY - absoluteMinY);
+                bounds = ObjectAnalyserService.findOuterBounds(60,50, processableZone, processableZones);
+                g.drawRect(bounds.x(), bounds.y(), bounds.width(), bounds.height());
+
+                bounds = ObjectAnalyserService.findOuterBounds(170,15, processableZone, processableZones);
+                g.drawRect(bounds.x(), bounds.y(), bounds.width(), bounds.height());
+
+
 
             }
         }

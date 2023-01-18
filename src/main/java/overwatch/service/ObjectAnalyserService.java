@@ -1,8 +1,12 @@
 package overwatch.service;
 
 import org.jetbrains.annotations.Nullable;
+import overwatch.Bounds;
+import overwatch.PixelstatePosition;
 import overwatch.model.Capture;
 import overwatch.model.ProcessableZone;
+
+import java.util.stream.IntStream;
 
 /**
  * Enthält statische Methoden für die Objekterkennung.
@@ -26,33 +30,17 @@ public class ObjectAnalyserService {
      * @return Gibt die größte mögliche Absolute Koordinate auf der x-Achse zurück, die gefunden wurde.
      */
     public static int walkRight(final int absoluteY, int absoluteX, final ProcessableZone[] zones, final Capture capture,@Nullable ProcessableZone zoneShortcut){
-        XLoop: while (true){
-            // Bounds check
-            if(absoluteX >= (capture.width - 1))
-                return absoluteX;
-            // Rechts wandern
-            absoluteX++;
-            // Pixel-Zustand auslesen
-            ZoneService.PixelState pixelState = ZoneService.calculatePixelState(absoluteX, absoluteY, zones, zoneShortcut);
+        return IntStream.range(absoluteX, capture.width)
+                .parallel()
+                .mapToObj(x->new PixelstatePosition(x, ZoneService.calculatePixelState(x,absoluteY,zones,zoneShortcut)))
+                .filter(input->!input.pixelState().isModified)
+                .filter(input->input.pixelState().isExisting)
+                .filter(input-> IntStream.range(input.x()+1,Math.min(input.x()+INTERSECTION_THRESHOLD, capture.width))
+                        .filter(x->ZoneService.calculatePixelState(x,absoluteY, zones,zoneShortcut).isModified)
+                        .findAny().isEmpty())
+                .mapToInt(PixelstatePosition::x)
+                        .findFirst().orElse(absoluteX);
 
-            if(pixelState.isZoneChanged)
-                zoneShortcut = ZoneService.findZoneForPixel(absoluteX, absoluteY, zones);
-
-            if(pixelState.isModified && pixelState.isExisting) {
-                continue;
-            }
-            else {
-                // Prüfe, ob angrenzende Pixel ebenfalls nicht belegt sind.
-                for (int offsetX = 1; offsetX <= INTERSECTION_THRESHOLD && (offsetX + absoluteX) < (capture.width-1); offsetX++){
-                    pixelState = ZoneService.calculatePixelState(absoluteX + offsetX, absoluteY, zones, zoneShortcut);
-                    if(!pixelState.isExisting)
-                        break;
-                    if (pixelState.isModified)
-                        continue XLoop;
-                }
-            }
-            return absoluteX - 1;
-        }
     }
     /**
      * Läuft entlang der x-Achse nach links, solange bis auf eine Reihe von nicht mutierten Pixeln gestoßen wird.
@@ -61,29 +49,24 @@ public class ObjectAnalyserService {
      * @param zones Die zu analysierenden Zonen.
      * @param zoneShortcut Optionaler Parameter für die optimistische Berechnung der aktuellen Zone.
      * @return Gibt die kleinste mögliche Absolute Koordinate auf der x-Achse zurück, die gefunden wurde.
+     *
      */
+
+
+
     public static int walkLeft(final int absoluteY, int absoluteX, final ProcessableZone[] zones, ProcessableZone zoneShortcut){
-        XLoop: while(true) {
-            if(absoluteX <= 0)
-                return absoluteX;
-            absoluteX--;
-            ZoneService.PixelState pixelState = ZoneService.calculatePixelState(absoluteX, absoluteY, zones, zoneShortcut);
-            if(pixelState.isZoneChanged)
-                zoneShortcut = ZoneService.findZoneForPixel(absoluteX, absoluteY, zones);
-            if(pixelState.isModified && pixelState.isExisting){
-                continue;
-            }
-            else {
-                for(int offsetX = 1; offsetX <= INTERSECTION_THRESHOLD && (absoluteX - offsetX) >= 0; offsetX++ ) {
-                    pixelState = ZoneService.calculatePixelState(absoluteX-offsetX, absoluteY, zones, zoneShortcut);
-                    if(!pixelState.isExisting)
-                        break;
-                    if(pixelState.isModified)
-                        continue XLoop;
-                }
-            }
-            return absoluteX+1;
-        }
+
+        return IntStream.iterate(absoluteX,x->x>0,x->x-1)
+                .parallel()
+                .mapToObj(x->new PixelstatePosition(x, ZoneService.calculatePixelState(x,absoluteY,zones,zoneShortcut)))
+                .filter(input->!input.pixelState().isModified)
+                .filter(input->input.pixelState().isExisting)
+                .filter(input-> IntStream.range(input.x()-1,Math.max(input.x()-INTERSECTION_THRESHOLD, 0))
+                        .filter(x->ZoneService.calculatePixelState(x,absoluteY, zones,zoneShortcut).isModified)
+                        .findAny().isEmpty())
+                .mapToInt(PixelstatePosition::x)
+                .findFirst().orElse(absoluteX);
+
     }
 
     /**
@@ -211,19 +194,20 @@ public class ObjectAnalyserService {
      * @param zones Die zu bearbeitenden Zonen.
      * @return Gibt ein array mit vier Elementen zurück in dem Format: [absoluteMinX, absoluteMinY, absoluteMaxX, absoluteMaxY].
      */
-    public static int[] findOuterBounds(final int relativeX, final int relativeY, final ProcessableZone zone, final ProcessableZone[] zones){
+    public static Bounds findOuterBounds(final int relativeX, final int relativeY, final ProcessableZone zone, final ProcessableZone[] zones){
         int absoluteX = relativeX + zone.absoluteXStart;
         int absoluteY = relativeY + zone.absoluteYStart;
 
         int[] walkDown = walkDown(absoluteX, absoluteY, zone.capture, zones);
         int[] walkUp = walkUp(absoluteX, absoluteY, zone.capture, zones);
 
-        return new int[]{
+        return new Bounds(
                 Math.min(walkDown[0], walkUp[0]),
                 Math.min(walkDown[1], walkUp[1]),
-                Math.max(walkDown[2], walkUp[2]),
-                Math.max(walkDown[3], walkUp[3])
-        };
+                Math.max(walkDown[2], walkUp[2])-Math.min(walkDown[0], walkUp[0]),
+                Math.max(walkDown[3], walkUp[3])-Math.min(walkDown[1], walkUp[1])
+
+        );
 
     }
 
