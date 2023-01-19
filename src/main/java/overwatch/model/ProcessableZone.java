@@ -1,6 +1,9 @@
 package overwatch.model;
 
-import overwatch.Image;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+import overwatch.skeleton.Image;
+import overwatch.skeleton.Outline;
 import overwatch.service.ImageService;
 
 import java.util.Arrays;
@@ -8,7 +11,7 @@ import java.util.Arrays;
 /**
  * Eine spezialisierte Variante von {@link Zone}, welche Pixeldaten beinhält.
  */
-public class ProcessableZone extends Zone {
+public class ProcessableZone implements Outline {
 
     /**
      * Wichtig: Muss null entsprechen, weil null als default für shorts gilt und auf diese Logik zurückgegriffen wird.
@@ -35,14 +38,11 @@ public class ProcessableZone extends Zone {
      */
     private final short [] pixelStates;
 
-    public ProcessableZone(Zone zone) {
-        super(zone);
-        this.pixelStates = new short[width * height];
-    }
+    private final @NotNull Zone zone;
 
-    public ProcessableZone(int nr, int offsetX, int offsetY, int width, int height, Capture capture) {
-        super(nr, offsetX, offsetY, width, height, capture);
-        this.pixelStates = new short[width * height];
+    public ProcessableZone(Zone zone) {
+        this.zone = zone;
+        this.pixelStates = new short[zone.width() * zone.height()];
     }
 
     /**
@@ -59,7 +59,7 @@ public class ProcessableZone extends Zone {
      * @return Gibt {@code true} zurück, sollte der Pixel modifiziert sein, andernfalls {@code false}.
      */
     public boolean isModified(int relativeX, int relativeY){
-        int index = relativeX + relativeY * width;
+        int index = relativeX + relativeY * width();
         if (pixelStates[index] == UNSET){
             return processPixel(relativeX,relativeY,index);
         }
@@ -78,11 +78,11 @@ public class ProcessableZone extends Zone {
             return pixelStates[index] == MODIFIED;
         }
 
-        Image sourceImage = ImageService.readSourceImage(capture);
-        Image currentImage = ImageService.readCurrentImage(capture);
+        Image sourceImage = ImageService.readSourceImage(zone.capture());
+        Image currentImage = ImageService.readCurrentImage(zone.capture());
 
-        int offsetX = this.offsetX + x;
-        int offsetY = this.offsetY + y;
+        int offsetX = zone.offsetX() + x;
+        int offsetY = zone.offsetY() + y;
         int sourcePixel = sourceImage.getPixel(offsetX, offsetY);
         int currentPixel = currentImage.getPixel(offsetX, offsetY);
 
@@ -106,6 +106,49 @@ public class ProcessableZone extends Zone {
         if (b > cmax) cmax = b;
 
         return ((float) cmax) / 255.0f;
+    }
+
+    @Override
+    public int endX() {
+        return zone.endX();
+    }
+
+    @Override
+    public int endY() {
+        return zone.endY();
+    }
+
+    @Override
+    public int x() {
+        return zone.x();
+    }
+
+    @Override
+    public int y() {
+        return zone.y();
+    }
+
+    @Override
+    public int width() {
+        return zone.width();
+    }
+
+    @Override
+    public int height() {
+        return zone.height();
+    }
+
+    @Override
+    public int area() {
+        return zone.area();
+    }
+
+    public int nr(){
+        return zone.nr();
+    }
+
+    public @NotNull Capture capture(){
+        return zone.capture();
     }
 }
 

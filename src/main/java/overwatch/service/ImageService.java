@@ -1,7 +1,6 @@
 package overwatch.service;
 
-import overwatch.Configuration;
-import overwatch.Image;
+import overwatch.skeleton.Image;
 import overwatch.model.Capture;
 
 import javax.imageio.ImageIO;
@@ -24,13 +23,13 @@ public class ImageService {
     private static Image readImageFromIO(Capture capture, boolean isSourceImage) throws Exception {
         boolean isVirtual = capture.isVirtual();
         final var imagePath = !isVirtual
-                ? Configuration.getString(Configuration.Keys.IMAGE_BASE_PATH) + "/" +  capture.deviceName + ".png"
+                ? ConfigurationService.getString(ConfigurationService.Keys.IMAGE_BASE_PATH) + "/" +  capture.deviceName() + ".png"
                 : isSourceImage
                     ? "src/main/resources/ImageSource.png"
                     : "src/main/resources/ImageCurrent.png";
 
         if(!isVirtual) {
-            final var command = new String[]{ "fswebcam", "-d", capture.deviceName, "--png", "1", "-q", imagePath };
+            final var command = new String[]{ "fswebcam", "-d", capture.deviceName(), "--png", "1", "-q", imagePath };
             Runtime.getRuntime().exec(command).waitFor();
         }
         return new Image.BackedImage(ImageIO.read(new File(imagePath)));
@@ -46,12 +45,12 @@ public class ImageService {
      */
     public static void updateSourceImage(Capture capture){
         try {
-            sourceImageMap.put(capture.deviceName, readImageFromIO(capture, true));
+            sourceImageMap.put(capture.deviceName(), readImageFromIO(capture, true));
         } catch (Exception e) {
             logger.severe(e.getMessage());
-            if (sourceImageMap.containsKey(capture.deviceName)) return;
+            if (sourceImageMap.containsKey(capture.deviceName())) return;
 
-            sourceImageMap.put(capture.deviceName, createBlank(capture.width, capture.height));
+            sourceImageMap.put(capture.deviceName(), createBlank(capture.width(), capture.height()));
         }
     }
 
@@ -61,13 +60,13 @@ public class ImageService {
      */
     public static void updateCurrentImage(Capture capture) {
         try {
-            currentImageMap.put(capture.deviceName, readImageFromIO(capture, false));
+            currentImageMap.put(capture.deviceName(), readImageFromIO(capture, false));
         }
         catch (Exception e){
             logger.severe(e.getMessage());
-            if(currentImageMap.containsKey(capture.deviceName)) return;
+            if(currentImageMap.containsKey(capture.deviceName())) return;
 
-            currentImageMap.put(capture.deviceName, createBlank(capture.width, capture.height));
+            currentImageMap.put(capture.deviceName(), createBlank(capture.width(), capture.height()));
         }
     }
 
@@ -77,8 +76,8 @@ public class ImageService {
      * @return Gibt das aktuelle Referenzbild aus.
      */
     public static Image readCurrentImage(Capture capture){
-        Image image = currentImageMap.get(capture.deviceName);
-        return image == null ? createBlank(capture.width, capture.height) : image;
+        Image image = currentImageMap.get(capture.deviceName());
+        return image == null ? createBlank(capture.width(), capture.height()) : image;
     }
 
     /**
@@ -87,7 +86,7 @@ public class ImageService {
      * @return Gibt das aktuelle Referenzbild aus.
      */
     public static Image readSourceImage(Capture capture){
-        Image image = sourceImageMap.get(capture.deviceName);
-        return image == null ? createBlank(capture.width, capture.height) : image;
+        Image image = sourceImageMap.get(capture.deviceName());
+        return image == null ? createBlank(capture.width(), capture.height()) : image;
     }
 }

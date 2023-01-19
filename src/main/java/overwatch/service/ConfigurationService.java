@@ -1,4 +1,4 @@
-package overwatch;
+package overwatch.service;
 
 import java.io.FileReader;
 import java.io.IOException;
@@ -8,7 +8,7 @@ import java.util.logging.Logger;
 /**
  * Simpler Zugriff auf Konfigurationen.
  */
-public class Configuration {
+public class ConfigurationService {
 
     public interface Keys {
         String SERVER_PORT = "server-port";
@@ -20,12 +20,12 @@ public class Configuration {
 
     private static final java.util.Properties properties = new Properties();
 
-    private static final Logger logger = Logger.getLogger(Configuration.class.getName());
+    private static final Logger logger = Logger.getLogger(ConfigurationService.class.getName());
 
     static {
         try {
             properties.load(new FileReader(CONFIGURATION_PATH));
-            logger.info("Configuration applied");
+            logger.info("ConfigurationService applied");
         }
         catch (IOException e) {
             logger.severe(e.getMessage());
@@ -34,7 +34,7 @@ public class Configuration {
         }
     }
 
-    private Configuration(){}
+    private ConfigurationService(){}
 
     /**
      * Liest eine Eigenschaft anhand eines Schlüssels.

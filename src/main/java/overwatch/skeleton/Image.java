@@ -1,4 +1,4 @@
-package overwatch;
+package overwatch.skeleton;
 
 import org.jetbrains.annotations.NotNull;
 
@@ -37,10 +37,10 @@ public interface Image {
     record BlankImage(int width, int height) implements Image {
 
         @Override
-            public int getPixel(int x, int y) {
-                return 0;
-            }
+        public int getPixel(int x, int y) {
+            return 0;
         }
+    }
 
     /**
      * Ein Bild, welches im Hintergrund ein {@link BufferedImage} verwendet.

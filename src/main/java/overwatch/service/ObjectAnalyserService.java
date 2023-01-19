@@ -1,11 +1,12 @@
 package overwatch.service;
 
 import org.jetbrains.annotations.Nullable;
-import overwatch.Bounds;
-import overwatch.PixelstatePosition;
-import overwatch.model.Capture;
-import overwatch.model.ProcessableZone;
+import overwatch.skeleton.Outline;
+import overwatch.model.*;
+import overwatch.skeleton.Rectangle;
+import overwatch.skeleton.Size;
 
+import java.util.OptionalInt;
 import java.util.stream.IntStream;
 
 /**
@@ -20,194 +21,109 @@ public class ObjectAnalyserService {
 
     private ObjectAnalyserService() {}
 
-    /**
-     * Läuft entlang der x-Achse nach rechts, solange bis auf eine Reihe von nicht mutierten Pixeln gestoßen wird.
-     * @param absoluteY Der Startpunkt auf der y-Achse in Absoluten Koordinaten.
-     * @param absoluteX Der Startpunkt auf der x-Achse in Absoluten Koordinaten.
-     * @param zones Die zu analysierenden Zonen.
-     * @param capture Das Bildgerät um die Bildgröße zu berechnen.
-     * @param zoneShortcut Optionaler Parameter für die optimistische Berechnung der aktuellen Zone.
-     * @return Gibt die größte mögliche Absolute Koordinate auf der x-Achse zurück, die gefunden wurde.
-     */
-    public static int walkRight(final int absoluteY, int absoluteX, final ProcessableZone[] zones, final Capture capture,@Nullable ProcessableZone zoneShortcut){
-        return IntStream.range(absoluteX, capture.width)
+    public static int walkRight(final int startX, final int y, final ProcessableZone[] zones, final Size size, @Nullable ProcessableZone zoneShortcut){
+        return IntStream.range(startX, size.width())
                 .parallel()
-                .mapToObj(x->new PixelstatePosition(x, ZoneService.calculatePixelState(x,absoluteY,zones,zoneShortcut)))
-                .filter(input->!input.pixelState().isModified)
-                .filter(input->input.pixelState().isExisting)
-                .filter(input-> IntStream.range(input.x()+1,Math.min(input.x()+INTERSECTION_THRESHOLD, capture.width))
-                        .filter(x->ZoneService.calculatePixelState(x,absoluteY, zones,zoneShortcut).isModified)
+                .filter(x -> {
+                    ZoneService.PixelState pixelState = ZoneService.calculatePixelState(x, y, zones, zoneShortcut);
+                    return !pixelState.isModified && pixelState.isExisting;
+                })
+                .filter(x-> IntStream.range(x+1,Math.min(x+INTERSECTION_THRESHOLD, size.width()))
+                        .filter(walkerX->ZoneService.calculatePixelState(walkerX, y, zones, zoneShortcut).isModified)
                         .findAny().isEmpty())
-                .mapToInt(PixelstatePosition::x)
-                        .findFirst().orElse(absoluteX);
-
+                .findFirst().orElse(y);
     }
-    /**
-     * Läuft entlang der x-Achse nach links, solange bis auf eine Reihe von nicht mutierten Pixeln gestoßen wird.
-     * @param absoluteY Der Startpunkt auf der y-Achse in Absoluten Koordinaten.
-     * @param absoluteX Der Startpunkt auf der x-Achse in Absoluten Koordinaten.
-     * @param zones Die zu analysierenden Zonen.
-     * @param zoneShortcut Optionaler Parameter für die optimistische Berechnung der aktuellen Zone.
-     * @return Gibt die kleinste mögliche Absolute Koordinate auf der x-Achse zurück, die gefunden wurde.
-     *
-     */
 
-
-
-    public static int walkLeft(final int absoluteY, int absoluteX, final ProcessableZone[] zones, ProcessableZone zoneShortcut){
-
-        return IntStream.iterate(absoluteX,x->x>0,x->x-1)
+    public static int walkLeft(final int startX, final int y, final ProcessableZone[] zones, @Nullable ProcessableZone zoneShortcut){
+        return IntStream.iterate(startX, x-> x>0, x-> x-1)
                 .parallel()
-                .mapToObj(x->new PixelstatePosition(x, ZoneService.calculatePixelState(x,absoluteY,zones,zoneShortcut)))
-                .filter(input->!input.pixelState().isModified)
-                .filter(input->input.pixelState().isExisting)
-                .filter(input-> IntStream.range(input.x()-1,Math.max(input.x()-INTERSECTION_THRESHOLD, 0))
-                        .filter(x->ZoneService.calculatePixelState(x,absoluteY, zones,zoneShortcut).isModified)
+                .filter(x -> {
+                    ZoneService.PixelState pixelState = ZoneService.calculatePixelState(x, y, zones, zoneShortcut);
+                    return !pixelState.isModified && pixelState.isExisting;
+                })
+                .filter(x-> IntStream.range(x-1,Math.max(x-INTERSECTION_THRESHOLD, 0))
+                        .filter(walkerX->ZoneService.calculatePixelState(walkerX, y, zones, zoneShortcut).isModified)
                         .findAny().isEmpty())
-                .mapToInt(PixelstatePosition::x)
-                .findFirst().orElse(absoluteX);
-
+                .findFirst().orElse(y);
     }
 
-    /**
-     * Läuft entlang der y-Achse nach unten (inkrementieren der y-Koordinate).
-     * Dabei werden die Extrema auf den gekreuzten x-Achsen ermittelt per {@link #walkLeft(int, int, ProcessableZone[], ProcessableZone)} und {@link #walkRight(int, int, ProcessableZone[], Capture, ProcessableZone)}.
-     * @param absoluteX Der Startpunkt auf der x-Achse in Absoluten Koordinaten.
-     * @param absoluteY Der Startpunkt auf der y-Achse in Absoluten Koordinaten.
-     * @param capture Das Videogerät für die Berechnung der Bildgröße.
-     * @param zones Die zu analysierenden Zonen.
-     * @return Gibt ein Array mit den kleinsten und größten gefundenen Absoluten Koordinaten zurück in dem Format: [absoluteMinX, absoluteMinY, absoluteMaxX, absoluteMaxY].
-     */
-    private static int[] walkDown(int absoluteX, int absoluteY, final Capture capture, final ProcessableZone[] zones){
-        return walkY(absoluteX, absoluteY, capture, zones, false);
-    }
+    private static Outline walkDown(int x, int y, final Size size, final ProcessableZone[] zones, @Nullable ProcessableZone shortcut){
+        int minX = x, lastMinX = x, maxX = x, lastMaxX = x, minY = y, maxY = y;
 
-    /**
-     * Läuft entlang der y-Achse nach oben (dekrementieren der y-Koordinate).
-     * Dabei werden die Extrema auf den gekreuzten x-Achsen ermittelt per {@link #walkLeft(int, int, ProcessableZone[], ProcessableZone)} und {@link #walkRight(int, int, ProcessableZone[], Capture, ProcessableZone)}.
-     * @param absoluteX Der Startpunkt auf der x-Achse in Absoluten Koordinaten.
-     * @param absoluteY Der Startpunkt auf der y-Achse in Absoluten Koordinaten.
-     * @param capture Das Videogerät für die Berechnung der Bildgröße.
-     * @param zones Die zu analysierenden Zonen.
-     * @return Gibt ein Array mit den kleinsten und größten gefundenen Absoluten Koordinaten zurück in dem Format: [absoluteMinX, absoluteMinY, absoluteMaxX, absoluteMaxY].
-     */
-    private static int[] walkUp(int absoluteX, int absoluteY, final Capture capture, final ProcessableZone[] zones){
-        return walkY(absoluteX, absoluteY, capture, zones, true);
-    }
+        for (; y < size.height(); y++){
+            ZoneService.PixelState pixelState = ZoneService.calculatePixelState(x, y, zones, shortcut);
 
-    /**
-     * Wandert von einer übergebenen Position aus über ein Objekt entlang der y-Achse. Dabei wird versucht ein maximal großes Rechteck zu finden.
-     * @param absoluteX Der Startpunkt der Erkennung in absoluten Pixeln.
-     * @param absoluteY Der Startpunkt der Erkennung in absoluten Pixeln.
-     * @param capture Das Videogerät, welches für die Erkennung der Bildgrüße verwendet werden soll.
-     * @param zones Die zu bearbeitenden Zonen.
-     * @param isWalkUp Gibt an auf der y-Achse nach oben (dekrementierend) oder nach unten (inkrementierend) gewandert werden soll.
-     * @return Gibt ein array mit vier Elementen zurück in dem Format: [absoluteMinX, absoluteMinY, absoluteMaxX, absoluteMaxY].
-     */
-    private static int[] walkY(int absoluteX, int absoluteY, final Capture capture, final ProcessableZone[] zones, final boolean isWalkUp){
-        int absoluteMinX = absoluteX;
-        int absoluteMinY = absoluteY;
-        int absoluteMaxX = absoluteMinX;
-        int absoluteMaxY = absoluteMinY;
-
-        ProcessableZone zoneShortcut = null;
-        YLoop: while (true) {
-
-            // Bounds check
-            if (isWalkUp){
-                if(absoluteY <= 0) break;
-            }
-            else {
-                if(absoluteY >= capture.height-2) break;
-            }
-
-            // Cursor Hoch/Runter bewegen
-            if(isWalkUp) absoluteY--;
-            else absoluteY++;
-
-            ZoneService.PixelState pixelState = ZoneService.calculatePixelState(absoluteX, absoluteY, zones, zoneShortcut);
-
-            if(pixelState.isZoneChanged)
-                zoneShortcut = ZoneService.findZoneForPixel(absoluteX, absoluteY, zones);
-
-            // Annahme: Rechteckige Zonen, es kann kein Pixel parallel auf der y-Achse bei anderem x-Wert existieren
-            if(!pixelState.isExisting){
-                if(isWalkUp) absoluteMinY = absoluteY;
-                else absoluteMaxY = absoluteY;
+            if (pixelState.isZoneChanged)
+                shortcut = Outline.findOutlineForPosition(x, y, zones);
+            if(!pixelState.isExisting)
                 break;
+            else if(!pixelState.isModified){
+                // Korrektur X
+                final int finalX = x;
+                final int checkY = y;
+                final @Nullable ProcessableZone finalShortcut = shortcut;
+                OptionalInt possibleX = IntStream.rangeClosed(lastMinX, lastMaxX)
+                        .parallel()
+                        .filter(checkX -> finalX != checkX)
+                        .filter(checkX -> ZoneService.calculatePixelState(checkX, checkY, zones, finalShortcut).isModified)
+                        .findAny();
+                if(possibleX.isPresent())
+                    x = possibleX.getAsInt();
+                else
+                    break;
             }
+            lastMinX = walkLeft(x, y, zones, shortcut);
+            lastMaxX =  walkRight(x, y , zones, size, shortcut);
+            minX = Math.min(lastMinX, minX);
+            maxX = Math.max(lastMaxX, maxX);
+            maxY = y;
 
-            if(pixelState.isModified){
-                int x = walkLeft(absoluteY, absoluteX, zones, zoneShortcut);
-                if(x < absoluteMinX)
-                    absoluteMinX = x;
-                x = walkRight(absoluteY, absoluteX, zones, capture, zoneShortcut);
-                if(x > absoluteMaxX)
-                    absoluteMaxX = x;
-            }
-            else {
-                if(isWalkUp) absoluteY--;
-                else absoluteY++;
-
-                int unmodifiedPixelCounter = 0;
-                final int absoluteCheckY = isWalkUp ? absoluteY -1 : absoluteY + 1;
-                for(int absoluteCheckX = absoluteX; absoluteCheckX >= 0; absoluteCheckX--){
-                    pixelState = ZoneService.calculatePixelState(absoluteCheckX, absoluteCheckY, zones, zoneShortcut);
-                    if(pixelState.isModified){
-                        absoluteX = absoluteCheckX;
-                        continue YLoop;
-                    }
-                    else {
-                        if(unmodifiedPixelCounter > INTERSECTION_THRESHOLD)
-                            break;
-                        unmodifiedPixelCounter++;
-                    }
-                }
-                unmodifiedPixelCounter = 0;
-                for(int absoluteCheckX = absoluteX; absoluteCheckX < capture.width; absoluteCheckX++) {
-                    pixelState = ZoneService.calculatePixelState(absoluteCheckX, absoluteCheckY, zones, zoneShortcut);
-                    if (pixelState.isModified) {
-                        absoluteX = absoluteCheckX;
-                        continue YLoop;
-                    }
-                    else {
-                        if(unmodifiedPixelCounter > INTERSECTION_THRESHOLD)
-                            break;
-                        unmodifiedPixelCounter++;
-                    }
-                }
-
-                if(isWalkUp) absoluteMinY = absoluteY;
-                else absoluteMaxY = absoluteY;
-                break;
-            }
         }
-        return new int[]{ absoluteMinX, absoluteMinY, absoluteMaxX, absoluteMaxY};
+        return new Rectangle(minX, minY, maxX - minX, maxY - minY);
     }
 
-    /**
-     * Findet für ein Objekt an einer Position die Dimensionen und die Position.
-     * @param relativeX Der Startpunkt der Erkennung auf der x-Achse in abhängigkeit zu der übergebenen Zone.
-     * @param relativeY Der Startpunkt der Erkennung auf der x-Achse in abhängigkeit zu der übergebenen Zone.
-     * @param zone Die Zone in deren Abhängigkeit die Koordinaten angegeben sind.
-     *             Es wird außerdem von dieser Zone das Videogerät verwendet für die Erkennung der Bildgröße.
-     * @param zones Die zu bearbeitenden Zonen.
-     * @return Gibt ein array mit vier Elementen zurück in dem Format: [absoluteMinX, absoluteMinY, absoluteMaxX, absoluteMaxY].
-     */
-    public static Bounds findOuterBounds(final int relativeX, final int relativeY, final ProcessableZone zone, final ProcessableZone[] zones){
-        int absoluteX = relativeX + zone.absoluteXStart;
-        int absoluteY = relativeY + zone.absoluteYStart;
 
-        int[] walkDown = walkDown(absoluteX, absoluteY, zone.capture, zones);
-        int[] walkUp = walkUp(absoluteX, absoluteY, zone.capture, zones);
 
-        return new Bounds(
-                Math.min(walkDown[0], walkUp[0]),
-                Math.min(walkDown[1], walkUp[1]),
-                Math.max(walkDown[2], walkUp[2])-Math.min(walkDown[0], walkUp[0]),
-                Math.max(walkDown[3], walkUp[3])-Math.min(walkDown[1], walkUp[1])
+    private static Outline walkUp(int x, int y, final Size size, final ProcessableZone[] zones, @Nullable ProcessableZone shortcut){
+        int minX = x, lastMinX = x, maxX = x, lastMaxX =x, minY = y, maxY = y;
 
-        );
+        for (; y > 0; y--){
+            ZoneService.PixelState pixelState = ZoneService.calculatePixelState(x, y, zones, shortcut);
+
+            if (pixelState.isZoneChanged)
+                shortcut = Outline.findOutlineForPosition(x, y, zones);
+
+            if(!pixelState.isExisting)
+                break;
+            else if(!pixelState.isModified){
+                // Korrektur X
+                final int finalX = x;
+                final int checkY = y;
+                final @Nullable ProcessableZone finalShortcut = shortcut;
+                OptionalInt possibleX = IntStream.rangeClosed(lastMinX, lastMaxX)
+                        .parallel()
+                        .filter(checkX -> finalX != checkX)
+                        .filter(checkX -> ZoneService.calculatePixelState(checkX, checkY, zones, finalShortcut).isModified)
+                        .findAny();
+                if(possibleX.isPresent())
+                    x = possibleX.getAsInt();
+                else
+                    break;
+            }
+            lastMinX = walkLeft(x, y, zones, shortcut);
+            lastMaxX =  walkRight(x, y, zones, size, shortcut);
+            minX = Math.min(lastMinX, minX);
+            maxX = Math.max(lastMaxX, maxX);
+            minY = y;
+
+        }
+        return new Rectangle(minX, minY, maxX - minX, maxY - minY);
+    }
+
+    public static Outline findObjectBounds(final int x, final int y, final Size size, final ProcessableZone[] zones, @Nullable final ProcessableZone shortcut){
+        final Outline upperOutline = walkDown(x, y, size, zones, shortcut);
+        final Outline lowerOutline = walkUp(x, y, size, zones, shortcut);
+        return Outline.compose(upperOutline, lowerOutline);
 
     }
 

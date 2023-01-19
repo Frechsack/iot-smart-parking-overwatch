@@ -1,45 +1,18 @@
 package overwatch.model;
 
+import org.jetbrains.annotations.NotNull;
+import overwatch.skeleton.Outline;
+
 /**
  * Stellt ein Videogerät dar, von welchen ein Bild gemacht werden kann.
  */
-@SuppressWarnings("ClassCanBeRecord")
-public final class Capture {
+public record Capture(int x, int y, int width, int height, int endX, int endY, int area, @NotNull String deviceName) implements Outline {
 
     public static String VIRTUAL_CAMERA_NAME = "Virtual";
 
-    /**
-     * Die virtuelle Positionierung des Bildes im Parkhaus auf der x-Achse.
-     */
-    public final int x;
-
-    /**
-     * Die virtuelle Positionierung des Bildes im Parkhaus auf der y-Achse.
-     */
-    public final int y;
-
-    /**
-     * Die Breite des Bildes.
-     */
-    public final int width;
-
-    /**
-     * Die Höhe des Bildes.
-     */
-    public final int height;
-
-    public Capture(int x, int y, int width, int height, String deviceName) {
-        this.x = x;
-        this.y = y;
-        this.width = width;
-        this.height = height;
-        this.deviceName = deviceName;
+    public Capture(int x, int y, int width, int height, @NotNull String deviceName){
+        this(x, y, width, height, x + width - 1, y + height -1, width * height, deviceName);
     }
-
-    /**
-     * Der Name des Videogerätes.
-     */
-    public final String deviceName;
 
     public boolean isVirtual(){
         return VIRTUAL_CAMERA_NAME.equals(deviceName);
