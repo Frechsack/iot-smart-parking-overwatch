@@ -1,21 +1,22 @@
 package overwatch.debug;
 
+import overwatch.model.ProcessableZone;
+import overwatch.model.Zone;
 import overwatch.service.ObjectAnalyserService;
-import overwatch.skeleton.Outline;
-import overwatch.model.*;
 import overwatch.service.ZoneService;
+import overwatch.skeleton.Outline;
 
 import javax.swing.*;
 import java.awt.*;
-import java.util.List;
+import java.util.Collection;
 
 public class DebugFrame extends JFrame {
-
-    // TODO: Mehrere Caputures anzeigen.
     private final Outline outline;
     private final ProcessableZone[] zones;
 
-    private final List<Outline> objects;
+    private final Collection<Outline> objects;
+
+    private final Collection<ProcessableZone> zonesWithObject;
 
     private class RootPanel extends JPanel {
         @Override
@@ -23,9 +24,13 @@ public class DebugFrame extends JFrame {
             super.paintComponent(g);
 
             for(ProcessableZone zone : zones) {
+                if(zonesWithObject.contains(zone)){
+                    g.setColor(Color.green);
+                    g.fillRect(zone.x(), zone.y(), zone.width(), zone.height());
+                }
                 g.setColor(Color.BLUE);
                 g.drawRect(zone.x(), zone.y(), zone.width(), zone.height());
-                g.drawString(Integer.toString(zone.nr()), zone.x() + 5, zone.y() + 10);
+                g.drawString(Integer.toString(zone.nr()), zone.x() + 5, zone.y() + 15);
             }
             for(int x = outline.x(); x < outline.width(); x++){
                 for(int y = outline.y(); y < outline.height(); y++){
@@ -51,6 +56,7 @@ public class DebugFrame extends JFrame {
             this.zones[i] = new ProcessableZone(zones[i]);
 
         this.objects = ObjectAnalyserService.findObjects(this.zones);
+        this.zonesWithObject = ObjectAnalyserService.findZonesWithObject(this.zones, objects);
 
         setSize(outline.width() + 2, outline.height() + 40);
         RootPanel root = new RootPanel();
