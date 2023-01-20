@@ -2,11 +2,12 @@ package overwatch.service;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import overwatch.model.ProcessableZone;
 import overwatch.skeleton.Outline;
-import overwatch.model.*;
 import overwatch.skeleton.Size;
 
 import java.util.*;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static overwatch.skeleton.Outline.isIntersecting;
@@ -26,6 +27,27 @@ public class ObjectAnalyserService {
 
     private static final int SKIP_PIXELS = 15;
     private static final int SIGNIFICANT_AREA_TO_DETECT = 25;
+
+
+    public static <E extends Outline> Collection<E> findZonesWithObject(final E[] zones, Collection<Outline> objects){
+        return objects.parallelStream()
+                .map(object -> {
+                    E maxZone = null;
+                    int maxOverlap = 0;
+                    for (E zone : zones){
+                        if(isIntersecting(zone, object)) {
+                            int overlap = Outline.intersectionArea(zone, object);
+                            if (overlap > maxOverlap){
+                                maxOverlap = overlap;
+                                maxZone = zone;
+                            }
+                        }
+                    }
+                    return maxZone;
+                })
+                .filter(Objects::nonNull)
+                .collect(Collectors.toUnmodifiableSet());
+    }
 
     /**
      * Findet alle Objekte innerhalb der übergebenen Zonen.
