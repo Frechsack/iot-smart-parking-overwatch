@@ -103,7 +103,7 @@ public class ObjectAnalyserService {
                         .parallel()
                         .noneMatch(walkerX->ZoneService.calculatePixelState(walkerX, y, zones, zoneShortcut).isModified)
                 )
-                .findFirst().orElse(y);
+                .findFirst().orElse(startX);
     }
 
     private static int walkLeft(final int startX, final int y, final ProcessableZone[] zones, @Nullable ProcessableZone zoneShortcut){
@@ -116,7 +116,7 @@ public class ObjectAnalyserService {
                         .parallel()
                         .noneMatch(walkerX->ZoneService.calculatePixelState(walkerX, y, zones, zoneShortcut).isModified)
                 )
-                .findFirst().orElse(y);
+                .findFirst().orElse(startX);
     }
 
     private static @NotNull Outline walkDown(int x, int y, final Size size, final ProcessableZone[] zones, @Nullable ProcessableZone shortcut){
@@ -204,7 +204,6 @@ public class ObjectAnalyserService {
         final Outline upperOutline = walkDown(x, y, size, zones, shortcut);
         final Outline lowerOutline = walkUp(x, y, size, zones, shortcut);
         return Outline.compose(upperOutline, lowerOutline);
-
     }
 
 }
