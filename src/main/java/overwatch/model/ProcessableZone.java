@@ -1,17 +1,15 @@
 package overwatch.model;
 
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
+import overwatch.service.ImageService;
 import overwatch.skeleton.Image;
 import overwatch.skeleton.Outline;
-import overwatch.service.ImageService;
 
 import java.util.Arrays;
 
 /**
  * Eine spezialisierte Variante von {@link Zone}, welche Pixeldaten beinhält.
  */
-public class ProcessableZone implements Outline {
+public class ProcessableZone extends Zone implements Outline {
 
     /**
      * Wichtig: Muss null entsprechen, weil null als default für shorts gilt und auf diese Logik zurückgegriffen wird.
@@ -38,10 +36,8 @@ public class ProcessableZone implements Outline {
      */
     private final short [] pixelStates;
 
-    private final @NotNull Zone zone;
-
     public ProcessableZone(Zone zone) {
-        this.zone = zone;
+        super(zone);
         this.pixelStates = new short[zone.width() * zone.height()];
     }
 
@@ -78,11 +74,11 @@ public class ProcessableZone implements Outline {
             return pixelStates[index] == MODIFIED;
         }
 
-        Image sourceImage = ImageService.readSourceImage(zone.capture());
-        Image currentImage = ImageService.readCurrentImage(zone.capture());
+        Image sourceImage = ImageService.readSourceImage(capture);
+        Image currentImage = ImageService.readCurrentImage(capture);
 
-        int offsetX = zone.offsetX() + x;
-        int offsetY = zone.offsetY() + y;
+        int offsetX = this.offsetX + x;
+        int offsetY = this.offsetY + y;
         int sourcePixel = sourceImage.getPixel(offsetX, offsetY);
         int currentPixel = currentImage.getPixel(offsetX, offsetY);
 
@@ -106,49 +102,6 @@ public class ProcessableZone implements Outline {
         if (b > cmax) cmax = b;
 
         return ((float) cmax) / 255.0f;
-    }
-
-    @Override
-    public int endX() {
-        return zone.endX();
-    }
-
-    @Override
-    public int endY() {
-        return zone.endY();
-    }
-
-    @Override
-    public int x() {
-        return zone.x();
-    }
-
-    @Override
-    public int y() {
-        return zone.y();
-    }
-
-    @Override
-    public int width() {
-        return zone.width();
-    }
-
-    @Override
-    public int height() {
-        return zone.height();
-    }
-
-    @Override
-    public int area() {
-        return zone.area();
-    }
-
-    public int nr(){
-        return zone.nr();
-    }
-
-    public @NotNull Capture capture(){
-        return zone.capture();
     }
 }
 

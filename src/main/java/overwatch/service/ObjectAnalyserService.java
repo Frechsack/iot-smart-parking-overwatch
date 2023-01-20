@@ -1,13 +1,16 @@
 package overwatch.service;
 
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import overwatch.skeleton.Outline;
 import overwatch.model.*;
-import overwatch.skeleton.Rectangle;
 import overwatch.skeleton.Size;
 
-import java.util.OptionalInt;
+import java.util.*;
 import java.util.stream.IntStream;
+
+import static overwatch.skeleton.Outline.isIntersecting;
+import static overwatch.skeleton.Outline.of;
 
 /**
  * Enthält statische Methoden für die Objekterkennung.
@@ -21,33 +24,102 @@ public class ObjectAnalyserService {
 
     private ObjectAnalyserService() {}
 
-    public static int walkRight(final int startX, final int y, final ProcessableZone[] zones, final Size size, @Nullable ProcessableZone zoneShortcut){
-        return IntStream.range(startX, size.width())
+    private static final int SKIP_PIXELS = 15;
+    private static final int SIGNIFICANT_AREA_TO_DETECT = 25;
+
+    /**
+     * Findet alle Objekte innerhalb der übergebenen Zonen.
+     * @param zones Die zu prüfenden Zonen.
+     * @return Gibt eine Liste mit allen gefundenen Objekten zurück.
+     */
+    public static List<Outline> findObjects(final ProcessableZone[] zones){
+        final List<Outline> bounds = new ArrayList<>(Arrays.stream(zones)
                 .parallel()
+                .flatMap(zone -> IntStream.iterate(zone.x(), x -> x + SKIP_PIXELS <= zone.endX(), x -> x + SKIP_PIXELS)
+                        .boxed()
+                        .parallel()
+                        .flatMap(x -> IntStream.iterate(zone.y(), y -> y + SKIP_PIXELS <= zone.endY(), y -> y + SKIP_PIXELS)
+                                .filter(y -> ZoneService.calculatePixelState(x, y, zones, zone).isModified)
+                                .mapToObj(y -> ObjectAnalyserService.findObjectBounds(x, y, zone.capture(), zones, zone))
+                                .filter(outline -> outline.area() >= SIGNIFICANT_AREA_TO_DETECT)
+                        ))
+                .toList());
+        for (int i = 0; i < bounds.size(); i++){
+            Outline a = bounds.get(i);
+            for (int y = i; y < bounds.size(); y++) {
+                Outline b = bounds.get(y);
+                if(a == b)
+                    continue;
+                if(!isIntersecting(a, b))
+                    continue;
+                a = Outline.compose(a, b);
+                bounds.remove(y--);
+            }
+            bounds.set(i, a);
+        }
+        return bounds;
+    }
+
+    @Deprecated
+    public static List<Outline> findObjectsSync(final ProcessableZone[] zones){
+        final List<Outline> objects = new ArrayList<>(Arrays.stream(zones)
+                .parallel()
+                .flatMap(zone -> {
+                    final List<Outline> outlineList = new ArrayList<>();
+                    for(int x = zone.x(); x < zone.endX() -1; x += SKIP_PIXELS ) {
+                        for(int y = zone.y(); y < zone.endY() -1; y += SKIP_PIXELS ) {
+                            ZoneService.PixelState pixelState = ZoneService.calculatePixelState(x, y, zones, zone);
+                            if(!pixelState.isModified) continue;
+                            Outline outline = ObjectAnalyserService.findObjectBounds(x, y, zone.capture(), zones, zone);
+                            if(outline.area() >= SIGNIFICANT_AREA_TO_DETECT)
+                                outlineList.add(outline);
+                        }
+                    }
+                    return outlineList.stream();
+                }).toList());
+        final List<Outline> composedBounds = new ArrayList<>(objects.size());
+
+        while (!objects.isEmpty()){
+            Outline a = objects.remove(0);
+            for (int i = 0; i < objects.size(); i++) {
+                Outline b = objects.get(i);
+                if(!isIntersecting(a, b))
+                    continue;
+                a = Outline.compose(a, b);
+                objects.remove(i--);
+            }
+            composedBounds.add(a);
+        }
+        return composedBounds;
+    }
+
+    private static int walkRight(final int startX, final int y, final ProcessableZone[] zones, final Size size, @Nullable ProcessableZone zoneShortcut){
+        return IntStream.range(startX, size.width())
                 .filter(x -> {
                     ZoneService.PixelState pixelState = ZoneService.calculatePixelState(x, y, zones, zoneShortcut);
                     return !pixelState.isModified && pixelState.isExisting;
                 })
                 .filter(x-> IntStream.range(x+1,Math.min(x+INTERSECTION_THRESHOLD, size.width()))
-                        .filter(walkerX->ZoneService.calculatePixelState(walkerX, y, zones, zoneShortcut).isModified)
-                        .findAny().isEmpty())
+                        .parallel()
+                        .noneMatch(walkerX->ZoneService.calculatePixelState(walkerX, y, zones, zoneShortcut).isModified)
+                )
                 .findFirst().orElse(y);
     }
 
-    public static int walkLeft(final int startX, final int y, final ProcessableZone[] zones, @Nullable ProcessableZone zoneShortcut){
+    private static int walkLeft(final int startX, final int y, final ProcessableZone[] zones, @Nullable ProcessableZone zoneShortcut){
         return IntStream.iterate(startX, x-> x>0, x-> x-1)
-                .parallel()
                 .filter(x -> {
                     ZoneService.PixelState pixelState = ZoneService.calculatePixelState(x, y, zones, zoneShortcut);
                     return !pixelState.isModified && pixelState.isExisting;
                 })
                 .filter(x-> IntStream.range(x-1,Math.max(x-INTERSECTION_THRESHOLD, 0))
-                        .filter(walkerX->ZoneService.calculatePixelState(walkerX, y, zones, zoneShortcut).isModified)
-                        .findAny().isEmpty())
+                        .parallel()
+                        .noneMatch(walkerX->ZoneService.calculatePixelState(walkerX, y, zones, zoneShortcut).isModified)
+                )
                 .findFirst().orElse(y);
     }
 
-    private static Outline walkDown(int x, int y, final Size size, final ProcessableZone[] zones, @Nullable ProcessableZone shortcut){
+    private static @NotNull Outline walkDown(int x, int y, final Size size, final ProcessableZone[] zones, @Nullable ProcessableZone shortcut){
         int minX = x, lastMinX = x, maxX = x, lastMaxX = x, minY = y, maxY = y;
 
         for (; y < size.height(); y++){
@@ -79,12 +151,10 @@ public class ObjectAnalyserService {
             maxY = y;
 
         }
-        return new Rectangle(minX, minY, maxX - minX, maxY - minY);
+        return Outline.of(minX, minY, maxX - minX, maxY - minY);
     }
 
-
-
-    private static Outline walkUp(int x, int y, final Size size, final ProcessableZone[] zones, @Nullable ProcessableZone shortcut){
+    private static @NotNull Outline walkUp(int x, int y, final Size size, final ProcessableZone[] zones, @Nullable ProcessableZone shortcut){
         int minX = x, lastMinX = x, maxX = x, lastMaxX =x, minY = y, maxY = y;
 
         for (; y > 0; y--){
@@ -117,10 +187,20 @@ public class ObjectAnalyserService {
             minY = y;
 
         }
-        return new Rectangle(minX, minY, maxX - minX, maxY - minY);
+        return of(minX, minY, maxX - minX, maxY - minY);
     }
 
-    public static Outline findObjectBounds(final int x, final int y, final Size size, final ProcessableZone[] zones, @Nullable final ProcessableZone shortcut){
+    /**
+     * Findet zu einer übergebenen Position ein Objekt. Es wird angenommen das an der Position ein Objekt ist.
+     * Die ermittelte Fläche sollten anhand ihrer Größe {@link Outline#area()} überprüft werden.
+     * @param x Position auf der x-Achse, auf der die Suche beginnt. Dieser Punkt muss innerhalb eines Objekts liegen.
+     * @param y Position auf der y-Achse, auf der die Suche beginnt. Dieser Punkt muss innerhalb eines Objekts liegen.
+     * @param size Die maximale zu durchsuchende Fläche. Üblicherweise die Größe der Kamera.
+     * @param zones Die zu prüfenden Zonen.
+     * @param shortcut Optionale Shortcut für eine zonenschätzung.
+     * @return Gibt die gefundene Fläche zurück.
+     */
+    public static @NotNull Outline findObjectBounds(final int x, final int y, final Size size, final ProcessableZone[] zones, @Nullable final ProcessableZone shortcut){
         final Outline upperOutline = walkDown(x, y, size, zones, shortcut);
         final Outline lowerOutline = walkUp(x, y, size, zones, shortcut);
         return Outline.compose(upperOutline, lowerOutline);

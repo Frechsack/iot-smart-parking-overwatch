@@ -6,12 +6,81 @@ import overwatch.skeleton.Outline;
 /**
  * Eine virtuelle Unterteilung eines Bildes.
  */
-public record Zone(int nr, @NotNull Capture capture, int offsetX, int offsetY, int x, int y, int width, int height, int endX, int endY, int area) implements Outline {
+public class Zone implements Outline {
+
+    protected final int nr;
+
+    protected final @NotNull Capture capture;
+    protected final int offsetX;
+    protected final int offsetY;
+    protected final int x;
+    protected final int y;
+    protected final int width;
+    protected final int height;
+    protected final int endX;
+    protected final int endY;
+    protected final int area;
 
     public Zone(int nr, @NotNull Capture capture, int offsetX, int offsetY, int width, int height) {
-        this(nr, capture, offsetX, offsetY, capture.x() + offsetX, capture.y() + offsetY, width, height, capture.x() + offsetX + width - 1, capture.y() + offsetY + height - 1, width * height);
+        this.nr = nr;
+        this.capture = capture;
+        this.offsetX = offsetX;
+        this.offsetY = offsetY;
+        this.x = capture.x() + offsetX;
+        this.y = capture.y() + offsetY;
+        this.width = width;
+        this.height = height;
+        this.endX = capture.x() + offsetX + width - 1;
+        this.endY = capture.y() + offsetY + height - 1;
+        this.area = width * height;
     }
 
+    public Zone(Zone copy){
+        this(copy.nr, copy.capture, copy.offsetX, copy.offsetY, copy.width, copy.height);
+    }
+
+    public int nr(){
+        return nr;
+    }
+
+    public @NotNull Capture capture(){
+        return capture;
+    }
+
+    @Override
+    public int endX() {
+        return endX;
+    }
+
+    @Override
+    public int endY() {
+        return endY;
+    }
+
+    @Override
+    public int x() {
+        return x;
+    }
+
+    @Override
+    public int y() {
+        return y;
+    }
+
+    @Override
+    public int width() {
+        return width;
+    }
+
+    @Override
+    public int height() {
+        return height;
+    }
+
+    @Override
+    public int area() {
+        return area;
+    }
 }
 
 

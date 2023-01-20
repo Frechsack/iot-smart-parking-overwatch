@@ -7,7 +7,7 @@ import java.awt.image.BufferedImage;
 /**
  * Interface für Bilder, welche über eine größe Verfügen und lesbare Pixel.
  */
-public interface Image {
+public interface Image extends Size {
 
     /**
      * Die Breite des Bildes.

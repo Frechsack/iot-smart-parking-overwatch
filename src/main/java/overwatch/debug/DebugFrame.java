@@ -1,8 +1,8 @@
 package overwatch.debug;
 
+import overwatch.service.ObjectAnalyserService;
 import overwatch.skeleton.Outline;
 import overwatch.model.*;
-import overwatch.service.AllroundAnalyzerService;
 import overwatch.service.ZoneService;
 
 import javax.swing.*;
@@ -50,7 +50,7 @@ public class DebugFrame extends JFrame {
         for (int i = 0; i < zones.length; i++)
             this.zones[i] = new ProcessableZone(zones[i]);
 
-        this.objects = AllroundAnalyzerService.findObjects(this.zones);
+        this.objects = ObjectAnalyserService.findObjects(this.zones);
 
         setSize(outline.width() + 2, outline.height() + 40);
         RootPanel root = new RootPanel();

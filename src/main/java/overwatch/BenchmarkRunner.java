@@ -4,7 +4,6 @@ import org.openjdk.jmh.annotations.*;
 import overwatch.model.Capture;
 import overwatch.model.ProcessableZone;
 import overwatch.model.Zone;
-import overwatch.service.AllroundAnalyzerService;
 import overwatch.service.ImageService;
 import overwatch.service.ObjectAnalyserService;
 
@@ -19,9 +18,9 @@ public class BenchmarkRunner {
 
     @Benchmark
     @BenchmarkMode(Mode.AverageTime)
-    @Warmup(iterations = 1, time = 100, timeUnit = TimeUnit.MILLISECONDS)
-    @Measurement(iterations = 3, time = 100, timeUnit =  TimeUnit.MILLISECONDS)
-    @Fork(value = 2, warmups = 2)
+    @Warmup(iterations = 10, time = 1000, timeUnit = TimeUnit.MILLISECONDS)
+    @Measurement(iterations = 10, time = 1000, timeUnit =  TimeUnit.MILLISECONDS)
+    @Fork(value = 2, warmups = 5)
     public void findObjects(){
 
         Capture capture = new Capture(0,0,800,400, Capture.VIRTUAL_CAMERA_NAME);
@@ -45,7 +44,7 @@ public class BenchmarkRunner {
         for (int i = 0; i < processableZones.length; i++) {
             processableZones[i] = new ProcessableZone(zones[i]);
         }
-        AllroundAnalyzerService.findObjects(processableZones);
+        ObjectAnalyserService.findObjects(processableZones);
 
     }
 }
