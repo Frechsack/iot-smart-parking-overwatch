@@ -3,6 +3,8 @@ package overwatch.model;
 import org.jetbrains.annotations.NotNull;
 import overwatch.skeleton.Outline;
 
+import java.util.Objects;
+
 /**
  * Eine virtuelle Unterteilung eines Bildes.
  */
@@ -80,6 +82,19 @@ public class Zone implements Outline {
     @Override
     public int area() {
         return area;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Zone zone = (Zone) o;
+        return nr == zone.nr && offsetX == zone.offsetX && offsetY == zone.offsetY && x == zone.x && y == zone.y && width == zone.width && height == zone.height && endX == zone.endX && endY == zone.endY && area == zone.area && capture.equals(zone.capture);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(nr, capture, offsetX, offsetY, x, y, width, height, endX, endY, area);
     }
 }
 

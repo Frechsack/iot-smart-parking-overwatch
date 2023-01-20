@@ -32,4 +32,19 @@ public record Capture(
     public boolean isVirtual(){
         return VIRTUAL_CAMERA_NAME.equals(deviceName);
     }
+
+    @Override
+    public int endX() {
+        return endX;
+    }
+
+    @Override
+    public int endY() {
+        return endY;
+    }
+
+    @Override
+    public int area() {
+        return area;
+    }
 }

@@ -103,5 +103,21 @@ public class ProcessableZone extends Zone implements Outline {
 
         return ((float) cmax) / 255.0f;
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        if (!super.equals(o)) return false;
+        ProcessableZone zone = (ProcessableZone) o;
+        return Arrays.equals(pixelStates, zone.pixelStates);
+    }
+
+    @Override
+    public int hashCode() {
+        int result = super.hashCode();
+        result = 31 * result + Arrays.hashCode(pixelStates);
+        return result;
+    }
 }
 
