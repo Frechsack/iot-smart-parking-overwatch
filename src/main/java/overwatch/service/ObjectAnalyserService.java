@@ -83,7 +83,7 @@ public class ObjectAnalyserService {
     }
 
     @Deprecated
-    public static List<Outline> findObjectsSync(final ProcessableZone[] zones){
+    public static List<Outline> findObjectsSequential(final ProcessableZone[] zones){
         final List<Outline> objects = new ArrayList<>(Arrays.stream(zones)
                 .parallel()
                 .flatMap(zone -> {
