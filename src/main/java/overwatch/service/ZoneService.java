@@ -1,19 +1,13 @@
 package overwatch.service;
 
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import overwatch.model.ProcessableZone;
-import overwatch.model.Zone;
-import overwatch.skeleton.Outline;
 
 /**
  * Statische Methoden für die Berechnung von Zonen übergreifenden Operationen.
  */
 public class ZoneService {
-
-    /**
-     * Die maximale Überschneidung bzw. Abstand zwischen zwei Zonen damit diese berührend erkannt werden.
-     */
-    private static final int INTERSECTION_DELTA = 5;
 
     /**
      * Der Zustand eines Pixels.
@@ -69,7 +63,7 @@ public class ZoneService {
      * @param shortcut Eine optionale Zone, die zuerst durchsucht werden soll.
      * @return Gibt zurück, ob der Pixel mutiert wurde oder nicht.
      */
-    public static PixelState calculatePixelState(final int x, final int y, final ProcessableZone[] zones, @Nullable final ProcessableZone shortcut){
+    public static @NotNull PixelState calculatePixelState(final int x, final int y, final ProcessableZone[] zones, @Nullable final ProcessableZone shortcut){
         if(shortcut != null && shortcut.x() <= x && shortcut.endX() >= x && shortcut.y() <= y && shortcut.endY() >= y)
             return shortcut.isModified(x - shortcut.x(), y - shortcut.y())
                 ? PixelState.MODIFIED
