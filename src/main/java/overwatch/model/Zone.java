@@ -8,7 +8,7 @@ import java.util.Objects;
 /**
  * Eine virtuelle Unterteilung eines Bildes.
  */
-public class Zone implements Outline {
+public sealed class Zone implements Outline permits ProcessableZone {
 
     protected final int nr;
 

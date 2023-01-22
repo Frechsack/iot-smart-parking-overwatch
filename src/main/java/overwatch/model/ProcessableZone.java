@@ -9,7 +9,7 @@ import java.util.Arrays;
 /**
  * Eine spezialisierte Variante von {@link Zone}, welche Pixeldaten beinhält.
  */
-public class ProcessableZone extends Zone implements Outline {
+public final class ProcessableZone extends Zone implements Outline {
 
     /**
      * Wichtig: Muss null entsprechen, weil null als default für shorts gilt und auf diese Logik zurückgegriffen wird.
