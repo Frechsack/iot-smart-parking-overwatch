@@ -1,17 +1,16 @@
 package overwatch;
 
-import overwatch.debug.DebugFrame;
-import overwatch.model.Capture;
-import overwatch.model.Zone;
-import overwatch.service.ImageService;
+import java.io.IOException;
 
 public class Application {
 
     public static void main (String[] args) {
-        new Server();
-
-
-
-
+        Server server = new Server();
+        try {
+            server.start();
+        }
+        catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 }
