@@ -119,5 +119,22 @@ public final class ProcessableZone extends Zone implements Outline {
         result = 31 * result + Arrays.hashCode(pixelStates);
         return result;
     }
+
+    @Override
+    public String toString() {
+        return "ProcessableZone{" +
+                "nr=" + nr +
+                ", capture=" + capture +
+                ", offsetX=" + offsetX +
+                ", offsetY=" + offsetY +
+                ", x=" + x +
+                ", y=" + y +
+                ", width=" + width +
+                ", height=" + height +
+                ", endX=" + endX +
+                ", endY=" + endY +
+                ", area=" + area +
+                '}';
+    }
 }
 
