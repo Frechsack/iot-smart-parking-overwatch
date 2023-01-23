@@ -13,7 +13,9 @@ public class ConfigurationService {
     public interface Keys {
         String SERVER_PORT = "server-port";
 
-        String IMAGE_BASE_PATH = "/tmp/";
+        String IMAGE_BASE_PATH = "image-base-path";
+
+        String ANALYSE_INTERVAL_MS = "analyse-interval-ms";
     }
 
     private static final String CONFIGURATION_PATH = "src/main/resources/application.properties";
@@ -53,6 +55,16 @@ public class ConfigurationService {
     public static int getInt(String key) {
         String value = properties.getProperty(key);
         return value == null ? 0 : Integer.parseInt(value);
+    }
+
+    /**
+     * Liest eine Eigenschaft anhand eines Schlüssels als long.
+     * @param key Der zu lesende Schlüssel.
+     * @return Gibt den verknüpften Wert zurück. Sollte der Wert nicht vorhanden sein, wird per Default 0 übergeben.
+     */
+    public static long getLong(String key) {
+        String value = properties.getProperty(key);
+        return value == null ? 0 : Long.parseLong(value);
     }
 
     /**
