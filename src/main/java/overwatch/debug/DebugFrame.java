@@ -24,7 +24,7 @@ public class DebugFrame extends JFrame {
             super.paintComponent(g);
 
             for(ProcessableZone zone : zones) {
-                if(zonesWithObject.contains(zone)){
+                if(zonesWithObject.stream().anyMatch(it -> it.nr() == zone.nr())){
                     g.setColor(Color.green);
                     g.fillRect(zone.x(), zone.y(), zone.width(), zone.height());
                 }
