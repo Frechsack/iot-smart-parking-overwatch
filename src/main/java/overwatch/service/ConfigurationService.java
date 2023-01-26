@@ -16,6 +16,8 @@ public class ConfigurationService {
         String IMAGE_BASE_PATH = "image-base-path";
 
         String ANALYSE_INTERVAL_MS = "analyse-interval-ms";
+
+        String SERVICE_UPDATE_ENDPOINT = "service-update-endpoint";
     }
 
     private static final String CONFIGURATION_PATH = "src/main/resources/application.properties";
