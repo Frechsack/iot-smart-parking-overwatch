@@ -2,7 +2,7 @@ package overwatch;
 
 import java.io.IOException;
 
-public class Application {
+public class ServerApplication {
 
     public static void main (String[] args) {
         Server server = new Server();
