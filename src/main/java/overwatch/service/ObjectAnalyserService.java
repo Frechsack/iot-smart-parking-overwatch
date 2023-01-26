@@ -21,12 +21,12 @@ public class ObjectAnalyserService {
     /**
      * Konstante, welche angibt wie viele Pixel beim durchlauf nach links und rechts ignoriert werden, sollten sie nicht mutiert sein.
      */
-    private static final int INTERSECTION_THRESHOLD = 2;
+    private static final int INTERSECTION_THRESHOLD = 5;
 
     private ObjectAnalyserService() {}
 
     private static final int SKIP_PIXELS = 15;
-    private static final int SIGNIFICANT_AREA_TO_DETECT = 25;
+    private static final int SIGNIFICANT_AREA_TO_DETECT = 45;
 
 
     public static <E extends Outline> Collection<E> findZonesWithObject(final E[] zones, Collection<Outline> objects){
