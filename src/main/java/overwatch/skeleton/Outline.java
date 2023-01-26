@@ -76,6 +76,14 @@ public interface Outline extends Position, Size {
      * @return {@code true} sollten sie sich überlappen, ansonsten {@code false}.
      */
     static boolean isIntersecting(Outline a, Outline b) {
+        if(a.x() <= b.x() &&
+           a.endX() >= b.endX() &&
+           a.y() <= b.y() &&
+           a.endY() >= b.endY())
+            return true;
+
+
+        // Intersecting
         return a.endY() >= b.y() &&
                 a.y() <= b.endY() &&
                 a.x() <= b.endX() &&
