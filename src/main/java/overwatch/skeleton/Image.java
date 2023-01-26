@@ -9,6 +9,8 @@ import java.awt.image.BufferedImage;
  */
 public interface Image extends Size {
 
+    void flush();
+
     /**
      * Die Breite des Bildes.
      * @return Die Breits des Bildes.
@@ -37,6 +39,11 @@ public interface Image extends Size {
     record BlankImage(int width, int height) implements Image {
 
         @Override
+        public void flush() {
+
+        }
+
+        @Override
         public int getPixel(int x, int y) {
             return 0;
         }
@@ -51,6 +58,11 @@ public interface Image extends Size {
 
         public BackedImage(@NotNull BufferedImage source) {
             this.source = source;
+        }
+
+        @Override
+        public void flush() {
+            source.flush();
         }
 
         @Override
