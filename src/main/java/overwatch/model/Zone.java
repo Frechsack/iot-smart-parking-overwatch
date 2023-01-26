@@ -89,12 +89,12 @@ public sealed class Zone implements Outline permits ProcessableZone {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         Zone zone = (Zone) o;
-        return nr == zone.nr && offsetX == zone.offsetX && offsetY == zone.offsetY && x == zone.x && y == zone.y && width == zone.width && height == zone.height && endX == zone.endX && endY == zone.endY && area == zone.area && capture.equals(zone.capture);
+        return nr == zone.nr;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(nr, capture, offsetX, offsetY, x, y, width, height, endX, endY, area);
+        return Objects.hash(nr);
     }
 }
 
