@@ -4,6 +4,8 @@ import overwatch.skeleton.Image;
 import overwatch.model.Capture;
 
 import javax.imageio.ImageIO;
+import java.awt.*;
+import java.awt.image.BufferedImage;
 import java.io.File;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -23,16 +25,37 @@ public class ImageService {
     private static Image readImageFromIO(Capture capture, boolean isSourceImage) throws Exception {
         boolean isVirtual = capture.isVirtual();
         final var imagePath = !isVirtual
-                ? ConfigurationService.getString(ConfigurationService.Keys.IMAGE_BASE_PATH) + "/" +  capture.deviceName() + ".png"
+                ? ConfigurationService.getString(ConfigurationService.Keys.IMAGE_BASE_PATH) + "/" +  capture.deviceName().replace("/", "_") + ".png"
                 : isSourceImage
                     ? "src/main/resources/ImageSource.png"
                     : "src/main/resources/ImageCurrent.png";
 
         if(!isVirtual) {
-            final var command = new String[]{ "fswebcam", "-d", capture.deviceName(), "--png", "1", "-q", imagePath };
+            final var command = new String[]{ "fswebcam", "-d", capture.deviceName(),"-q", imagePath };
+            final var blur = new String[]{ "convert", "-brightness-contrast", "10x10", imagePath, imagePath};
+            final var saturation = new String[]{ "convert", "-blur", "0x5", imagePath, imagePath};
             Runtime.getRuntime().exec(command).waitFor();
+           // Runtime.getRuntime().exec(blur).waitFor();
+            Runtime.getRuntime().exec(saturation).waitFor();
         }
-        return new Image.BackedImage(ImageIO.read(new File(imagePath)));
+
+        BufferedImage image = ImageIO.read(new File(imagePath));
+
+        if(image.getWidth() != capture.width() || image.getHeight() != capture.height()) {
+            if (isSourceImage)
+                logger.warning("Image-Dimension of device: '" + capture.deviceName() +"' does not match size of capture. Picture will be scaled.");
+
+            BufferedImage scaled = new BufferedImage(capture.width(), capture.height(), image.getType());
+            Graphics2D g = scaled.createGraphics();
+            g.setRenderingHint(RenderingHints.KEY_INTERPOLATION,
+                    RenderingHints.VALUE_INTERPOLATION_BILINEAR);
+            g.drawImage(image, 0, 0, capture.width(), capture.height(), 0, 0, image.getWidth(),
+                    image.getHeight(), null);
+            g.dispose();
+            image.flush();
+            image = scaled;
+        }
+        return new Image.BackedImage(image);
     }
 
     private static Image createBlank(int width, int height) {
@@ -45,12 +68,16 @@ public class ImageService {
      */
     public static void updateSourceImage(Capture capture){
         try {
-            sourceImageMap.put(capture.deviceName(), readImageFromIO(capture, true));
+            Image oldImage = sourceImageMap.put(capture.deviceName(), readImageFromIO(capture, true));
+            if(oldImage != null)
+                oldImage.flush();
         } catch (Exception e) {
             logger.severe(e.getMessage());
             if (sourceImageMap.containsKey(capture.deviceName())) return;
 
-            sourceImageMap.put(capture.deviceName(), createBlank(capture.width(), capture.height()));
+            Image oldImage = sourceImageMap.put(capture.deviceName(), createBlank(capture.width(), capture.height()));
+            if(oldImage != null)
+                oldImage.flush();
         }
     }
 
@@ -60,13 +87,17 @@ public class ImageService {
      */
     public static void updateCurrentImage(Capture capture) {
         try {
-            currentImageMap.put(capture.deviceName(), readImageFromIO(capture, false));
+            Image oldImage = currentImageMap.put(capture.deviceName(), readImageFromIO(capture, false));
+            if(oldImage != null)
+                oldImage.flush();
         }
         catch (Exception e){
             logger.severe(e.getMessage());
             if(currentImageMap.containsKey(capture.deviceName())) return;
 
-            currentImageMap.put(capture.deviceName(), createBlank(capture.width(), capture.height()));
+            Image oldImage = currentImageMap.put(capture.deviceName(), createBlank(capture.width(), capture.height()));
+            if(oldImage != null)
+                oldImage.flush();
         }
     }
 
