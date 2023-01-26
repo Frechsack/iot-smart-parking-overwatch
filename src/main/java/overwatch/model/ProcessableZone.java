@@ -5,6 +5,7 @@ import overwatch.skeleton.Image;
 import overwatch.skeleton.Outline;
 
 import java.util.Arrays;
+import java.util.Objects;
 
 /**
  * Eine spezialisierte Variante von {@link Zone}, welche Pixeldaten beinhält.
@@ -25,11 +26,6 @@ public final class ProcessableZone extends Zone implements Outline {
      * Ein Pixel ist nicht modifiziert.
      */
     private static final short UNMODIFIED = 2;
-
-    /**
-     * Der zu erreichende Schwellwert, damit zwei Pixel als verschieden und somit {@link #MODIFIED} gelten.
-     */
-    private static final float BRIGHTNESS_DELTA = 0.01f;
 
     /**
      * Die aktuellen Status der Pixel.
@@ -82,10 +78,7 @@ public final class ProcessableZone extends Zone implements Outline {
         int sourcePixel = sourceImage.getPixel(offsetX, offsetY);
         int currentPixel = currentImage.getPixel(offsetX, offsetY);
 
-        float sourceBrightness = calculateBrightness(sourcePixel);
-        float currentBrightness = calculateBrightness(currentPixel);
-
-        short pixelState = Math.abs(sourceBrightness) - Math.abs(currentBrightness) > BRIGHTNESS_DELTA
+        short pixelState = isPixelDifferent(sourcePixel, currentPixel)
                 ? MODIFIED
                 :UNMODIFIED;
         pixelStates[index] = pixelState;
@@ -93,15 +86,20 @@ public final class ProcessableZone extends Zone implements Outline {
 
     }
 
-    private float calculateBrightness(int rgb) {
-        int r = (rgb & 0xff0000) >> 16;
-        int b = rgb & 0xff;
-        int g = (rgb & 0xff00) >> 8;
+    private boolean isPixelDifferent(int source, int current){
+        final double SIGNIFICANT = 150;
 
-        int cmax = Math.max(r, g);
-        if (b > cmax) cmax = b;
-
-        return ((float) cmax) / 255.0f;
+        int sR = (source & 0xff0000) >> 16;
+        int sB = source & 0xff;
+        int sG = (source & 0xff00) >> 8;
+        int cR = (current & 0xff0000) >> 16;
+        int cB = current & 0xff;
+        int cG = (current & 0xff00) >> 8;
+        int rmean = (sR +cR )/ 2;
+        int r = sR - cR;
+        int g = sG - cG;
+        int b = sB - cB;
+        return Math.sqrt((((512+rmean)*r*r)>>8) + 4*g*g + (((767-rmean)*b*b)>>8)) > SIGNIFICANT;
     }
 
     @Override
@@ -110,14 +108,12 @@ public final class ProcessableZone extends Zone implements Outline {
         if (o == null || getClass() != o.getClass()) return false;
         if (!super.equals(o)) return false;
         ProcessableZone zone = (ProcessableZone) o;
-        return Arrays.equals(pixelStates, zone.pixelStates);
+        return nr == zone.nr;
     }
 
     @Override
     public int hashCode() {
-        int result = super.hashCode();
-        result = 31 * result + Arrays.hashCode(pixelStates);
-        return result;
+        return Objects.hashCode(nr);
     }
 
     @Override
