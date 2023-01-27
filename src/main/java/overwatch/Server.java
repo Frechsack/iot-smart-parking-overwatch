@@ -18,29 +18,29 @@ public class Server extends NanoHTTPD {
 
     @Override
     public Response serve(IHTTPSession session) {
-        if(session.getHeaders().getOrDefault("key", "").equals(ConfigurationService.getString(ConfigurationService.Keys.OVERWATCH_INIT_KEY)))
-            return createError(401, "Wrong key");
+        if(!session.getHeaders().getOrDefault("key", "").equals(ConfigurationService.getString(ConfigurationService.Keys.OVERWATCH_INIT_KEY)))
+            return createError(Response.Status.UNAUTHORIZED, "Wrong key");
 
-        if(session.getMethod() == Method.PUT)
+        if(session.getMethod() == Method.POST)
             return serveInit(session);
 
         if (session.getMethod() == Method.GET)
             return serveImage(session);
 
-        return createError(405, "Method Not Allowed");
+        return createError(Response.Status.METHOD_NOT_ALLOWED, "Method Not Allowed");
     }
 
     private Response serveInit(IHTTPSession session){
         Optional<InitDto> requestOptional = readInitRequestFromSession(session);
         if(requestOptional.isEmpty())
-            return createError(409, "Empty data");
+            return createError(Response.Status.CONFLICT, "Empty data");
         InitDto request = requestOptional.get();
         Engine.start(request.toZones());
         return createSuccessful();
     }
 
     private Response serveImage(IHTTPSession session){
-        return createError(409, "Not implemented");
+        return createError(Response.Status.CONFLICT, "Not implemented");
     }
 
     private static Optional<InitDto> readInitRequestFromSession(IHTTPSession session){
@@ -67,12 +67,13 @@ public class Server extends NanoHTTPD {
         return Optional.ofNullable(map.get("postData"));
     }
 
-    private static Response createError(int status, String message){
-        return newFixedLengthResponse(new HTTPStatus(status), NanoHTTPD.MIME_PLAINTEXT, message);
+    private static Response createError(Response.IStatus status, String message){
+        logger.warning("HttpError: status: '" + status +  "', message: '" + message + "'");
+        return newFixedLengthResponse(status, NanoHTTPD.MIME_PLAINTEXT, message);
     }
 
     private static Response createSuccessful(){
-        return newFixedLengthResponse(new HTTPStatus(200), NanoHTTPD.MIME_PLAINTEXT, "");
+        return newFixedLengthResponse(Response.Status.OK, NanoHTTPD.MIME_PLAINTEXT, "");
     }
 
     public Server() {
@@ -83,24 +84,6 @@ public class Server extends NanoHTTPD {
     public void start() throws IOException {
         this.start(-1, false);
         logger.info("Server is running");
-    }
-
-    private static class HTTPStatus implements Response.IStatus {
-        private final int statusCode;
-
-        private HTTPStatus(int statusCode) {
-            this.statusCode = statusCode;
-        }
-
-        @Override
-        public String getDescription() {
-            return "";
-        }
-
-        @Override
-        public int getRequestStatus() {
-            return statusCode;
-        }
     }
 }
 
