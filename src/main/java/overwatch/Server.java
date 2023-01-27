@@ -18,14 +18,29 @@ public class Server extends NanoHTTPD {
 
     @Override
     public Response serve(IHTTPSession session) {
-        if (session.getMethod() != Method.POST)
-            return createError(405, "Method Not Allowed");
+        if(session.getHeaders().getOrDefault("key", "").equals(ConfigurationService.getString(ConfigurationService.Keys.OVERWATCH_INIT_KEY)))
+            return createError(401, "Wrong key");
+
+        if(session.getMethod() == Method.POST)
+            return serveInit(session);
+
+        if (session.getMethod() == Method.GET)
+            return serveImage(session);
+
+        return createError(405, "Method Not Allowed");
+    }
+
+    private Response serveInit(IHTTPSession session){
         Optional<InitDto> requestOptional = readInitRequestFromSession(session);
         if(requestOptional.isEmpty())
             return createError(409, "Empty data");
         InitDto request = requestOptional.get();
         Engine.start(request.toZones());
         return createSuccessful();
+    }
+
+    private Response serveImage(IHTTPSession session){
+        return createError(409, "Not implemented");
     }
 
     private static Optional<InitDto> readInitRequestFromSession(IHTTPSession session){

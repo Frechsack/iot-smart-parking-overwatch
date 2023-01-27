@@ -21,11 +21,12 @@ public class HttpService {
     public static void sendZoneUpdate(int[] zoneNrs){
         final Collection<QueryParam> queryParams = new ArrayList<>(zoneNrs.length);
         for (int zoneNr : zoneNrs)
-            queryParams.add(new QueryParam("takenZones", Integer.toString(zoneNr)));
+            queryParams.add(new QueryParam("zones", Integer.toString(zoneNr)));
 
         try {
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(buildUri(queryParams))
+                    .header("key", ConfigurationService.getString(ConfigurationService.Keys.SERVICE_UPDATE_KEY))
                     .PUT(HttpRequest.BodyPublishers.noBody())
                     .build();
             HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
