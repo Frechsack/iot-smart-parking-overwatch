@@ -21,7 +21,7 @@ public class Server extends NanoHTTPD {
         if(session.getHeaders().getOrDefault("key", "").equals(ConfigurationService.getString(ConfigurationService.Keys.OVERWATCH_INIT_KEY)))
             return createError(401, "Wrong key");
 
-        if(session.getMethod() == Method.POST)
+        if(session.getMethod() == Method.PUT)
             return serveInit(session);
 
         if (session.getMethod() == Method.GET)
