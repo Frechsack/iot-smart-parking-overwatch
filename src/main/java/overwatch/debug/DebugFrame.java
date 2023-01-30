@@ -7,8 +7,7 @@ import overwatch.skeleton.Outline;
 
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
+import java.sql.Time;
 
 public class DebugFrame extends JFrame {
 
@@ -21,15 +20,20 @@ public class DebugFrame extends JFrame {
         }
     }
 
-    public DebugFrame (Zone[] zones){
-        super();
+    private final RootPanel root;
+
+    public void updateZones(Zone[] zones){
         Outline outline = Outline.compose(zones);
         setSize(outline.width() + 2, outline.height() + 40);
-        RootPanel root = new RootPanel();
-        root.setBounds(0, 0, outline.width(), outline.height());
-        setContentPane(root);
-        setVisible(true);
 
+        root.setBounds(0, 0, outline.width(), outline.height());
+        setVisible(true);
+    }
+
+    public DebugFrame (){
+        super();
+        root = new RootPanel();
+        setContentPane(root);
         Timer timer = new Timer(ConfigurationService.getInt(ConfigurationService.Keys.ANALYSE_INTERVAL_MS), e -> {
             root.repaint();
         });

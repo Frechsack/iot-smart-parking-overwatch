@@ -3,11 +3,14 @@ package overwatch;
 import overwatch.debug.DebugFrame;
 import overwatch.model.Capture;
 import overwatch.model.Zone;
-import overwatch.service.ImageService;
+import overwatch.service.ConfigurationService;
 
 public class DebugApplication {
 
     public static void main(String[] args) {
+        ConfigurationService.override(ConfigurationService.Keys.DEBUG_FRAME_ENABLE, "true");
+
+
         Capture c1 = new Capture(0,0,352,288, "/dev/video0");
         Zone z1 = new Zone(1, c1,   0,  0, 100,150);
         Zone z2 = new Zone(2, c1, 100,  0, 100,150);
@@ -24,7 +27,5 @@ public class DebugApplication {
         };
 
         Engine.start(zones);
-
-        new DebugFrame(zones);
     }
 }

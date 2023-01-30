@@ -19,6 +19,9 @@ public class HttpService {
     private HttpService() {}
 
     public static void sendZoneUpdate(int[] zoneNrs){
+
+        System.out.println(Arrays.toString(zoneNrs));
+
         final Collection<QueryParam> queryParams = new ArrayList<>(zoneNrs.length);
         for (int zoneNr : zoneNrs)
             queryParams.add(new QueryParam("zones", Integer.toString(zoneNr)));
@@ -37,7 +40,7 @@ public class HttpService {
                         + response.body() + "'.");
         }
         catch (Exception e){
-            logger.severe(e.getMessage());
+            logger.severe("Could not send Http-Request to service.");
         }
     }
 

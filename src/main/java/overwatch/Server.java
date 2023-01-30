@@ -40,6 +40,7 @@ public class Server extends NanoHTTPD {
     }
 
     private Response serveImage(IHTTPSession session){
+        // TODO: Serve Image
         return createError(Response.Status.CONFLICT, "Not implemented");
     }
 

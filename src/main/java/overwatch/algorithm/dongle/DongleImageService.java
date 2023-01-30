@@ -1,7 +1,8 @@
-package overwatch.service;
+package overwatch.algorithm.dongle;
 
-import overwatch.skeleton.Image;
 import overwatch.model.Capture;
+import overwatch.service.ConfigurationService;
+import overwatch.skeleton.Image;
 
 import javax.imageio.ImageIO;
 import java.awt.*;
@@ -11,31 +12,25 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Logger;
 
-/**
- * Statische Methoden zum Ein- und auslesen von Bildern.
- */
-public class ImageService {
-
-    private static final Logger logger = Logger.getLogger(ImageService.class.getName());
+class DongleImageService {
+    private static final Logger logger = Logger.getLogger(DongleImageService.class.getName());
     private static final Map<String, Image> sourceImageMap = new ConcurrentHashMap<>();
     private static final Map<String, Image> currentImageMap = new ConcurrentHashMap<>();
 
-    private ImageService() {}
+    private DongleImageService() {}
 
-    private static Image readImageFromIO(Capture capture, boolean isSourceImage) throws Exception {
+    static Image readImageFromIO(Capture capture, boolean isSourceImage) throws Exception {
         boolean isVirtual = capture.isVirtual();
         final var imagePath = !isVirtual
                 ? ConfigurationService.getString(ConfigurationService.Keys.IMAGE_BASE_PATH) + "/" +  capture.deviceName().replace("/", "_") + ".png"
                 : isSourceImage
-                    ? "src/main/resources/ImageSource.png"
-                    : "src/main/resources/ImageCurrent.png";
+                ? "src/main/resources/ImageSource.png"
+                : "src/main/resources/ImageCurrent.png";
 
         if(!isVirtual) {
             final var command = new String[]{ "fswebcam", "-d", capture.deviceName(),"-q", imagePath };
-            final var blur = new String[]{ "convert", "-brightness-contrast", "10x10", imagePath, imagePath};
             final var saturation = new String[]{ "convert", "-blur", "0x5", imagePath, imagePath};
             Runtime.getRuntime().exec(command).waitFor();
-           // Runtime.getRuntime().exec(blur).waitFor();
             Runtime.getRuntime().exec(saturation).waitFor();
         }
 
@@ -58,7 +53,7 @@ public class ImageService {
         return new Image.BackedImage(image);
     }
 
-    private static Image createBlank(int width, int height) {
+    static Image createBlank(int width, int height) {
         return new Image.BlankImage(width, height);
     }
 
@@ -66,7 +61,7 @@ public class ImageService {
      * Liest den Bildspeicher für das Quellbild erneut ein.
      * @param capture Das Videogerät für den Einlesevorgang.
      */
-    public static void updateSourceImage(Capture capture){
+    static void updateSourceImage(Capture capture){
         try {
             Image oldImage = sourceImageMap.put(capture.deviceName(), readImageFromIO(capture, true));
             if(oldImage != null)
@@ -85,7 +80,7 @@ public class ImageService {
      * Liest den Bildspeicher für das aktuelle Referenzbild erneut ein.
      * @param capture Das Videogerät für den Einlesevorgang.
      */
-    public static void updateCurrentImage(Capture capture) {
+    static void updateCurrentImage(Capture capture) {
         try {
             Image oldImage = currentImageMap.put(capture.deviceName(), readImageFromIO(capture, false));
             if(oldImage != null)
@@ -106,7 +101,7 @@ public class ImageService {
      * @param capture Das verknüpfte Videogerät.
      * @return Gibt das aktuelle Referenzbild aus.
      */
-    public static Image readCurrentImage(Capture capture){
+    static Image readCurrentImage(Capture capture){
         Image image = currentImageMap.get(capture.deviceName());
         return image == null ? createBlank(capture.width(), capture.height()) : image;
     }
@@ -116,7 +111,7 @@ public class ImageService {
      * @param capture Das verknüpfte Videogerät.
      * @return Gibt das aktuelle Referenzbild aus.
      */
-    public static Image readSourceImage(Capture capture){
+    static Image readSourceImage(Capture capture){
         Image image = sourceImageMap.get(capture.deviceName());
         return image == null ? createBlank(capture.width(), capture.height()) : image;
     }

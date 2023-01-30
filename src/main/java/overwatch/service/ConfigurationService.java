@@ -1,5 +1,7 @@
 package overwatch.service;
 
+import org.bytedeco.opencv.presets.opencv_core;
+
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.Properties;
@@ -16,6 +18,10 @@ public class ConfigurationService {
         String IMAGE_BASE_PATH = "image-base-path";
 
         String ANALYSE_INTERVAL_MS = "analyse-interval-ms";
+
+        String ANALYSE_OPENCV_ENABLE = "analyse-opencv-enable";
+
+        String DEBUG_FRAME_ENABLE = "debug-frame";
 
         String SERVICE_UPDATE_ENDPOINT = "service-update-endpoint";
         String SERVICE_UPDATE_KEY = "service-update-key";
@@ -42,6 +48,10 @@ public class ConfigurationService {
     }
 
     private ConfigurationService(){}
+
+    public static void override(String key, String value){
+        properties.put(key, value);
+    }
 
     /**
      * Liest eine Eigenschaft anhand eines Schlüssels.
@@ -80,5 +90,15 @@ public class ConfigurationService {
     public static float getFloat(String key) {
         String value = properties.getProperty(key);
         return value == null ? 0 : Float.parseFloat(key);
+    }
+
+    /**
+     * Liest eine Eigenschaft anhand eines Schlüssels als boolean.
+     * @param key Der zu lesende Schlüssel.
+     * @return Gibt den verknüpften Wert zurück. Sollte der Wert nicht vorhanden sein, wird per Default false übergeben.
+     */
+    public static boolean getBoolean(String key) {
+        String value = properties.getProperty(key);
+        return Boolean.parseBoolean(value);
     }
 }

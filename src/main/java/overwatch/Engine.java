@@ -3,19 +3,20 @@ package overwatch;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.UnmodifiableView;
+import overwatch.algorithm.Algorithm;
+import overwatch.debug.DebugFrame;
 import overwatch.model.Capture;
-import overwatch.model.ProcessableZone;
 import overwatch.model.Zone;
 import overwatch.service.*;
-import overwatch.skeleton.Outline;
 
-import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.util.List;
 import java.util.*;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.BooleanSupplier;
+import java.util.function.Predicate;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 public class Engine {
@@ -40,11 +41,19 @@ public class Engine {
 
     private static volatile @Nullable Thread engineThread;
 
-    private static volatile @Nullable ObjectAnalyserTask engineTask;
+    private static volatile @Nullable Engine.EngineTask engineTask;
 
     private static volatile @Nullable Engine.CancelHock engineCancelHook;
 
+    private static final @Nullable DebugFrame debugFrame;
+
     private Engine () {}
+
+    static {
+        debugFrame = ConfigurationService.getBoolean(ConfigurationService.Keys.DEBUG_FRAME_ENABLE)
+                ? new DebugFrame()
+                : null;
+    }
 
     public static boolean isRunning(){
         final Thread engineThread = Engine.engineThread;
@@ -75,17 +84,9 @@ public class Engine {
         threadModificationLock.lock();
         long startTimestamp = System.currentTimeMillis();
         cancel();
-
-        // ImageService sollte Quelldaten neu laden.
-        Arrays.stream(zones)
-                .parallel()
-                .map(Zone::capture)
-                .distinct()
-                .forEach(ImageService::updateSourceImage);
-
         // Setze neue Engine auf.
         final CancelHock engineCancelHook = new CancelHock();
-        final ObjectAnalyserTask engineTask = new ObjectAnalyserTask(zones, engineCancelHook);
+        final EngineTask engineTask = new EngineTask(zones, engineCancelHook);
         final Thread engineThread =  new Thread(engineTask);
         engineThread.setDaemon(false);
         engineThread.start();
@@ -97,138 +98,92 @@ public class Engine {
         threadModificationLock.unlock();
         long endTimestamp = System.currentTimeMillis();
         logger.info("Engine restarted in " + (endTimestamp - startTimestamp) + "ms.");
+
+        if (debugFrame != null)
+            debugFrame.updateZones(zones);
     }
 
     public static BufferedImage getGeneratedImage(){
-        final ObjectAnalyserTask objectAnalyserTask = Engine.engineTask;
-        return isRunning() && objectAnalyserTask != null
-                ? objectAnalyserTask.getImage()
+        final EngineTask engineTask = Engine.engineTask;
+        return isRunning() && engineTask != null
+                ? engineTask.getImage()
                 : new BufferedImage(1,1, BufferedImage.TYPE_INT_RGB);
     }
 
-    private static class ObjectAnalyserTask implements Runnable {
-
-        private static final int UNMODIFIED_PIXEL_RGB = Color.white.getRGB();
-
-        private static final int MODIFIED_PIXEL_RGB = Color.black.getRGB();
-
-        private static final int ZONE_BOUNDS_RGB = Color.blue.getRGB();
-
-        private static final int OUTLINES_RGB = Color.red.getRGB();
-
-        private static final int ZONE_TAKEN_RGB = Color.green.getRGB();
+    private static class EngineTask implements Runnable {
 
         private final long iterationInterval;
 
-        private final @NotNull Outline outerBounds;
-
         private final @NotNull BooleanSupplier isCanceled;
 
-        private final @NotNull ProcessableZone[] zones;
+        private final @NotNull Algorithm algorithm;
 
-        private final @NotNull Capture[] captures;
+        private @NotNull @UnmodifiableView Collection<? extends Zone> activeZones = Set.of();
 
-        private final @NotNull BufferedImage generatedImage;
+        @SuppressWarnings("unchecked")
+        private final Collection<? extends Zone>[] activeZonesStack =
+                (Collection<? extends Zone>[]) IntStream.range(0, calculateHistorySize()).boxed().map(it -> List.of()).toArray(Collection[]::new);
 
-        private volatile @NotNull @UnmodifiableView List<Outline> outlines = List.of();
 
-        private volatile @NotNull @UnmodifiableView Collection<Zone> zonesWithObjects = Set.of();
-
-        private ObjectAnalyserTask(@NotNull Zone[] zones, @NotNull BooleanSupplier isCanceled) {
-            this.zones = Arrays.stream(zones)
-                    .map(ProcessableZone::new)
-                    .toArray(ProcessableZone[]::new);
-            this.captures = Arrays.stream(zones)
-                    .map(Zone::capture)
-                    .distinct()
-                    .toArray(Capture[]::new);
+        private EngineTask(@NotNull Zone[] zones, @NotNull BooleanSupplier isCanceled) {
             this.iterationInterval = ConfigurationService.getInt(ConfigurationService.Keys.ANALYSE_INTERVAL_MS);
             this.isCanceled = isCanceled;
-            this.outerBounds = Outline.compose(zones);
-            this.generatedImage = new BufferedImage(outerBounds.width(), outerBounds.height(), BufferedImage.TYPE_INT_RGB);
+            this.algorithm = Algorithm.create(zones);
         }
 
-        private void zonesWithObjectChanged(Collection<Zone> zonesWithObjects){
-            this.zonesWithObjects = zonesWithObjects;
-            HttpService.sendZoneUpdate(zonesWithObjects.stream().mapToInt(Zone::nr).toArray());
+        private static int calculateHistorySize(){
+            int interval = ConfigurationService.getInt(ConfigurationService.Keys.ANALYSE_INTERVAL_MS);
+            if(interval > 0){
+                float techSize = 1500f / (float)interval;
+                int size = (int) techSize;
+                return Math.max(size, 1);
+            }
+            return 4;
+        }
+
+        private boolean isEqual(Collection<?> a, Collection<?> b){
+            if(!b.containsAll(a)) return false;
+            return a.containsAll(b);
+        }
+
+        private synchronized void updateZones(Collection<? extends Zone> newZones){
+
+            final @NotNull @UnmodifiableView Collection<? extends Zone> activeZones = this.activeZones;
+            final Predicate<Zone> isInStack = zone -> {
+                for (Collection<?> stackItem : activeZonesStack) {
+                    if(!stackItem.contains(zone))
+                        return false;
+                }
+                return true;
+            };
+
+            final @NotNull Set<? extends Zone> newActiveZones = newZones.stream()
+                    .filter(isInStack)
+                    .collect(Collectors.toSet());
+
+            if(!isEqual(newActiveZones, activeZones)){
+                HttpService.sendZoneUpdate(newActiveZones.stream().mapToInt(Zone::nr).toArray());
+                this.activeZones = Collections.unmodifiableSet(newActiveZones);
+            }
+
+            // Update Stack
+            for (int i = 0; i < activeZonesStack.length - 1; i++)
+                activeZonesStack[i] = activeZonesStack[i+1];
+            activeZonesStack[activeZonesStack.length-1] = newZones;
         }
 
         public BufferedImage getImage(){
-            updateGeneratedImage();
-            return generatedImage;
+            return algorithm.computeImage();
         }
-
-        private synchronized void updateGeneratedImage(){
-            final long generateImageBeginnTimestamp = System.currentTimeMillis();
-            final @Nullable List<Outline> outlines = this.outlines;
-            final @Nullable Collection<Zone> zonesWithObjects = this.zonesWithObjects;
-            final @NotNull Graphics g = generatedImage.getGraphics();
-
-            // Reset
-            IntStream.range(0, outerBounds.width())
-                    .parallel()
-                    .forEach(x -> IntStream.range(0, outerBounds.height())
-                            .parallel()
-                            .forEach(y -> generatedImage.setRGB(x,y, UNMODIFIED_PIXEL_RGB)));
-
-            // Besetzte Zonen
-            g.setColor(new Color(ZONE_TAKEN_RGB));
-            for (Zone zone : zonesWithObjects)
-                g.fillRect(zone.x(), zone.y(), zone.width(), zone.height());
-
-            // Zonen Umriss
-            g.setColor(new Color(ZONE_BOUNDS_RGB));
-            for (Zone zone : zones) {
-                g.drawRect(zone.x(), zone.y(), zone.width(), zone.height());
-                g.drawString(Integer.toString(zone.nr()), zone.x() + 5, zone.y() + 10);
-            }
-
-            // Objekte
-            for (Outline outline : outlines) {
-                g.setColor(new Color(OUTLINES_RGB));
-                g.drawRect(outline.x(), outline.y(), outline.width(), outline.height());
-                g.setColor(new Color(MODIFIED_PIXEL_RGB));
-                IntStream.rangeClosed(outline.x(), outline.endX())
-                        .forEach(x -> {
-                            IntStream.rangeClosed(outline.y(), outline.endY())
-                                    .filter(y -> ZoneService.calculatePixelState(x,y, this.zones, null).isModified)
-                                    .forEach(y -> {
-                                        g.fillRect(x,y,1,1);
-                                    });
-                        });
-            }
-            g.dispose();
-
-            final long generateImageFinishedTimestamp = System.currentTimeMillis();
-            final long generateImageDurationMillis = generateImageFinishedTimestamp - generateImageBeginnTimestamp;
-            logger.info("Generate-image took: '" + generateImageDurationMillis  + "' ms.");
-        }
-
 
         @Override
         public void run() throws RuntimeException {
             while (!isCanceled.getAsBoolean()){
                 final long analyseBeginnTimestamp = System.currentTimeMillis();
-                Arrays.stream(captures).forEach(ImageService::updateCurrentImage);
-                Arrays.stream(zones).parallel().forEach(ProcessableZone::reset);
-                final List<Outline> outlines = this.outlines = Collections.unmodifiableList(ObjectAnalyserService.findObjects(zones));
-                final Collection<Zone> zonesWithObjects = Collections.unmodifiableCollection(ObjectAnalyserService.findZonesWithObject(zones, outlines));
-
-                // Change Detection
-                if(zonesWithObjects.size() != this.zonesWithObjects.size()) {
-                    zonesWithObjectChanged(zonesWithObjects);
-                }
-                else {
-                    for (Zone a : zonesWithObjects) {
-                        if(!this.zonesWithObjects.contains(a)) {
-                            zonesWithObjectChanged(zonesWithObjects);
-                            break;
-                        }
-                    }
-                }
+                final Collection<? extends Zone> newZones = algorithm.compute();
+                updateZones(newZones);
                 final long analyseFinishedTimestamp = System.currentTimeMillis();
                 final long analyseDurationMillis = analyseFinishedTimestamp - analyseBeginnTimestamp;
-                logger.info("Analyse-iteration took: '" + analyseDurationMillis  + "' ms.");
 
                 if(iterationInterval > analyseDurationMillis) {
                     long sleepMillis = iterationInterval - analyseDurationMillis;
@@ -242,6 +197,9 @@ public class Engine {
                     logger.warning("Analyse-iteration took: '" + analyseDurationMillis  + "' ms. This is longer than an iteration should take.");
                 }
             }
+            algorithm.close();
         }
+
+        private record ZoneCounter(Zone zone, int count){};
     }
 }

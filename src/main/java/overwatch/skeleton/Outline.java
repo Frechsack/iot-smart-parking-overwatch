@@ -1,5 +1,7 @@
 package overwatch.skeleton;
 
+import org.bytedeco.opencv.opencv_core.Rect;
+
 import java.util.Arrays;
 
 /**
@@ -35,6 +37,10 @@ public interface Outline extends Position, Size {
      */
     static Outline of(int x, int y, int width, int height) {
         return new Rectangle(x, y, width, height, width * height, x + width - 1, y+ height - 1);
+    }
+
+    static Outline of(Rect rect) {
+        return new Rectangle(rect.x(), rect.y(), rect.width(), rect.height(), rect.width() * rect.height(), rect.x() + rect.width() - 1, rect.y() + rect.height() - 1);
     }
 
     /**
@@ -82,6 +88,22 @@ public interface Outline extends Position, Size {
            a.endY() >= b.endY())
             return true;
 
+        // Intersecting
+        return a.endY() >= b.y() &&
+                a.y() <= b.endY() &&
+                a.x() <= b.endX() &&
+                a.endX() >= b.x();
+    }
+
+    static boolean isIntersecting(Outline a, Outline b, int intersectionThreshold) {
+        a = of(a.x() - intersectionThreshold, a.y() - intersectionThreshold, a.width() + intersectionThreshold * 2, a.height() + intersectionThreshold * 2);
+        b = of(b.x() - intersectionThreshold, b.y() - intersectionThreshold, b.width() + intersectionThreshold * 2, b.height() + intersectionThreshold * 2);
+
+        if(a.x() <= b.x() &&
+                a.endX() >= b.endX() &&
+                a.y() <= b.y() &&
+                a.endY() >= b.endY())
+            return true;
 
         // Intersecting
         return a.endY() >= b.y() &&
