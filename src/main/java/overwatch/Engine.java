@@ -5,7 +5,6 @@ import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.UnmodifiableView;
 import overwatch.algorithm.Algorithm;
 import overwatch.debug.DebugFrame;
-import overwatch.model.Capture;
 import overwatch.model.Zone;
 import overwatch.service.*;
 
@@ -147,7 +146,6 @@ public class Engine {
         }
 
         private synchronized void updateZones(Collection<? extends Zone> newZones){
-
             final @NotNull @UnmodifiableView Collection<? extends Zone> activeZones = this.activeZones;
             final Predicate<Zone> isInStack = zone -> {
                 for (Collection<?> stackItem : activeZonesStack) {
@@ -162,7 +160,7 @@ public class Engine {
                     .collect(Collectors.toSet());
 
             if(!isEqual(newActiveZones, activeZones)){
-                HttpService.sendZoneUpdate(newActiveZones.stream().mapToInt(Zone::nr).toArray());
+                HttpService.sendActiveZones(newActiveZones.stream().mapToInt(Zone::nr).toArray());
                 this.activeZones = Collections.unmodifiableSet(newActiveZones);
             }
 
@@ -200,6 +198,6 @@ public class Engine {
             algorithm.close();
         }
 
-        private record ZoneCounter(Zone zone, int count){};
+        private record ZoneCounter(Zone zone, int count){}
     }
 }

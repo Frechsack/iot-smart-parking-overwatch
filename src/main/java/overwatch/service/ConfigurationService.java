@@ -1,7 +1,5 @@
 package overwatch.service;
 
-import org.bytedeco.opencv.presets.opencv_core;
-
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.Properties;
@@ -12,6 +10,9 @@ import java.util.logging.Logger;
  */
 public class ConfigurationService {
 
+    /**
+     * Die verfügbaren Schlüssel.
+     */
     public interface Keys {
         String SERVER_PORT = "server-port";
 

@@ -15,6 +15,7 @@ import java.util.logging.Logger;
  * Service für den {@link DongleAlgorithm} um auf Bilddaten zuzugreifen.
  */
 class DongleImageService {
+
     private static final Logger logger = Logger.getLogger(DongleImageService.class.getName());
     private static final Map<String, DongleImage> sourceImageMap = new ConcurrentHashMap<>();
     private static final Map<String, DongleImage> currentImageMap = new ConcurrentHashMap<>();

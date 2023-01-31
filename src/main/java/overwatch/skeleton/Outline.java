@@ -39,6 +39,11 @@ public interface Outline extends Position, Size {
         return new Rectangle(x, y, width, height, width * height, x + width - 1, y+ height - 1);
     }
 
+    /**
+     * Erstellt eine neue Outline aus einem OpenCv-Rectangle.
+     * @param rect Das OpenCv-Rectangle.
+     * @return Gibt die erstellte Outline zurück.
+     */
     static Outline of(Rect rect) {
         return new Rectangle(rect.x(), rect.y(), rect.width(), rect.height(), rect.width() * rect.height(), rect.x() + rect.width() - 1, rect.y() + rect.height() - 1);
     }
@@ -95,6 +100,14 @@ public interface Outline extends Position, Size {
                 a.endX() >= b.x();
     }
 
+    /**
+     * Prüft, ob zwei Flächen sich überlappen.
+     * @param a Die erste Fläche.
+     * @param b Die zweite Fläche.
+     * @param intersectionThreshold Zu ignorierender Abstand zwischen den beiden Flächen.
+     *                              Ist der Abstand geringer als dieser Parameter, werden zwei Flächen als überlappend betrachtet.
+     * @return Gibt {@code true} zurück, wenn die Flächen überlappen, ansonsten {@code false}.
+     */
     static boolean isIntersecting(Outline a, Outline b, int intersectionThreshold) {
         a = of(a.x() - intersectionThreshold, a.y() - intersectionThreshold, a.width() + intersectionThreshold * 2, a.height() + intersectionThreshold * 2);
         b = of(b.x() - intersectionThreshold, b.y() - intersectionThreshold, b.width() + intersectionThreshold * 2, b.height() + intersectionThreshold * 2);

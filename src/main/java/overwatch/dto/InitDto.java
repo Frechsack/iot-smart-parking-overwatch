@@ -9,6 +9,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Transportobjekt für den Init Aufruf.
+ */
 public class InitDto {
     @JsonProperty(required = true)
     private CapturesDto captures;
@@ -22,6 +25,11 @@ public class InitDto {
 
     public InitDto(){}
 
+    /**
+     * Transformiert den Inhalt dieses DTOs in Zonen.
+     * @return Gibt alle Zonen als Array zurück.
+     * @throws RuntimeException Wird geworfen, sollte eine Zone auf eine nicht vorhandene {@link Capture} verweisen.
+     */
     public @NotNull Zone[] toZones() throws RuntimeException {
         final List<Capture> captures = new ArrayList<>();
         for (Map.Entry<String, CaptureDto> entry : this.captures.getCaptures().entrySet()) {

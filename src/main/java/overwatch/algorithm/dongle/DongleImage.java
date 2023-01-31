@@ -6,7 +6,7 @@ import overwatch.skeleton.Size;
 import java.awt.image.BufferedImage;
 
 /**
- * Interface für Bilder, welche über eine größe Verfügen und lesbare Pixel.
+ * Interface für Bilder.
  */
 public interface DongleImage extends Size {
 
