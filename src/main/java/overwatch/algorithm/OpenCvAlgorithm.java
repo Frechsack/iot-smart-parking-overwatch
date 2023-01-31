@@ -20,21 +20,38 @@ import java.util.function.BiPredicate;
 import java.util.stream.Collectors;
 
 import static org.bytedeco.opencv.global.opencv_imgproc.*;
-import static org.bytedeco.opencv.global.opencv_video.createBackgroundSubtractorKNN;
 import static org.bytedeco.opencv.global.opencv_video.createBackgroundSubtractorMOG2;
 import static overwatch.skeleton.Outline.isIntersecting;
 
+/**
+ * Objekterkennung auf Basis von OpenCv.
+ */
 public final class OpenCvAlgorithm extends Algorithm {
 
+    /**
+     * Die Auszuwertenden Zonen.
+     */
     private final @NotNull Zone[] zones;
 
+    /**
+     * Beherbergt alle von OpenCv nativen Ressourcen pro {@link Capture}.
+     */
     private final @NotNull OpenCvRessource[] openCvResources;
 
+    /**
+     * Grundlage für das zu rendernde Bild.
+     */
     private final @NotNull BufferedImage image;
 
+    /**
+     * Collection mit allen erkannten Objekten im aktuellen Frame.
+     */
     private volatile @NotNull @UnmodifiableView Collection<Outline> objects = List.of();
 
-    private volatile @NotNull @UnmodifiableView Collection<Zone> zonesWithObjects = List.of();
+    /**
+     * Collection mit allen aktiven Zonen. Eine Zone ist aktiv, wenn mindestens ein Objekt in ihr liegt.
+     */
+    private volatile @NotNull @UnmodifiableView Collection<Zone> activeZones = List.of();
 
     public OpenCvAlgorithm(@NotNull Zone[] zones){
         this.zones = zones;
@@ -47,13 +64,18 @@ public final class OpenCvAlgorithm extends Algorithm {
         this.image = new BufferedImage(outerBounds.width(), outerBounds.height(), BufferedImage.TYPE_INT_RGB);
     }
 
+    /**
+     * Erstellt eine neue {@link OpenCvRessource} für eine Capture.
+     * @param capture Die Capture für die Ressourcen erstellt werden soll.
+     * @return Gibt die erstellten Ressourcen zurück.
+     */
     private OpenCvRessource createRessource(Capture capture){
         return new OpenCvRessource(
                 capture,
                 new VideoCapture(Integer.parseInt(capture.deviceName().substring(capture.deviceName().lastIndexOf("o")+1))),
                 new Mat(),
                 new Mat(),
-                createBackgroundSubtractorMOG2(100,16,true));
+                createBackgroundSubtractorMOG2(1000000000,256,true));
     }
 
     @Override
@@ -109,25 +131,31 @@ public final class OpenCvAlgorithm extends Algorithm {
             outlines.set(i, a);
         }
         this.objects = outlines;
-        this.zonesWithObjects = findZonesWithObject(zones, outlines).toList();
-        return zonesWithObjects;
+        this.activeZones = findActiveZones(zones, outlines).toList();
+        return activeZones;
     }
 
     @Override
-    public synchronized BufferedImage computeImage() {
+    public synchronized @NotNull BufferedImage computeImage() {
         final @NotNull @UnmodifiableView Collection<Outline> outlines = this.objects;
-        final @NotNull @UnmodifiableView Collection<Zone> zonesWithObjects = this.zonesWithObjects;
+        final @NotNull @UnmodifiableView Collection<Zone> zonesWithObjects = this.activeZones;
         final BiPredicate<Integer, Integer> isPixelModified = (x, y) -> {
             OpenCvRessource ressource = findRessourceForPosition(x,y);
-
             final float scaleX = (float) ressource.sourceFrame.cols() / (float) ressource.capture.width();
             final float scaleY = (float) ressource.sourceFrame.rows() / (float) ressource.capture.height();
             return ressource.foregroundFrame.ptr((int)(y * scaleY),(int)(x * scaleX)).get() > 0;
         };
+
         renderImage(image, isPixelModified, zones, zonesWithObjects, outlines);
         return image;
     }
 
+    /**
+     * Findet zu einer Position eine {@link OpenCvRessource}.
+     * @param x Die Position auf der x-Achse.
+     * @param y Die Position auf der y-Achse.
+     * @return Gibt die gefundene Ressource zurück.
+     */
     private @NotNull OpenCvRessource findRessourceForPosition(final int x, final int y) {
         for (OpenCvRessource openCvResource : openCvResources) {
             final Capture capture = openCvResource.capture;
@@ -137,5 +165,13 @@ public final class OpenCvAlgorithm extends Algorithm {
         throw new IllegalStateException("Pixel is not in any capture. Please take a look at the calling code.");
     }
 
+    /**
+     * Wrapper für native OpenCv Ressourcen. Diese Ressourcen werden pro {@link Capture} erstellt und müssen wieder freigegeben werden nach Verwendung.
+     * @param capture Die Capture.
+     * @param captureDevice Das OpenCv VideoCapture.
+     * @param sourceFrame Das aktuelle Frame.
+     * @param foregroundFrame Das aktuelle Vordergrund-Frame.
+     * @param subtract Der verwendete Algorithmus für die Hintergrundsubtraktion.
+     */
     private record OpenCvRessource(Capture capture, VideoCapture captureDevice, Mat sourceFrame, Mat foregroundFrame, BackgroundSubtractor subtract) {}
 }

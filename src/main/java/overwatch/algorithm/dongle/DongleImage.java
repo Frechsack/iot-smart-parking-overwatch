@@ -1,13 +1,14 @@
-package overwatch.skeleton;
+package overwatch.algorithm.dongle;
 
 import org.jetbrains.annotations.NotNull;
+import overwatch.skeleton.Size;
 
 import java.awt.image.BufferedImage;
 
 /**
  * Interface für Bilder, welche über eine größe Verfügen und lesbare Pixel.
  */
-public interface Image extends Size {
+public interface DongleImage extends Size {
 
     void flush();
 
@@ -36,7 +37,7 @@ public interface Image extends Size {
      * @param width Die Breite des Bildes.
      * @param height Die Höhe des Bildes.
      */
-    record BlankImage(int width, int height) implements Image {
+    record BlankImage(int width, int height) implements DongleImage {
 
         @Override
         public void flush() {
@@ -52,7 +53,7 @@ public interface Image extends Size {
     /**
      * Ein Bild, welches im Hintergrund ein {@link BufferedImage} verwendet.
      */
-    class BackedImage implements Image {
+    class BackedImage implements DongleImage {
 
         private final @NotNull BufferedImage source;
 

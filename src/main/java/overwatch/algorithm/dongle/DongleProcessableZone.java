@@ -1,7 +1,6 @@
 package overwatch.algorithm.dongle;
 
 import overwatch.model.Zone;
-import overwatch.skeleton.Image;
 import overwatch.skeleton.Outline;
 
 import java.util.Arrays;
@@ -74,8 +73,8 @@ final class DongleProcessableZone extends Zone implements Outline {
             return pixelStates[index] == MODIFIED;
         }
 
-        Image sourceImage = readSourceImage(capture);
-        Image currentImage = readCurrentImage(capture);
+        DongleImage sourceImage = readSourceImage(capture);
+        DongleImage currentImage = readCurrentImage(capture);
 
         int offsetX = this.offsetX + x;
         int offsetY = this.offsetY + y;

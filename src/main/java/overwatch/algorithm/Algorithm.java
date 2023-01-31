@@ -18,22 +18,51 @@ import java.util.stream.Stream;
 
 import static overwatch.skeleton.Outline.isIntersecting;
 
+/**
+ * Basisklasse für Bewegungserkennung.
+ */
 public abstract class Algorithm {
 
-    protected static final int SKIP_PIXELS = 25;
+    /**
+     * Mindestgröße von Objekten damit sie erkannt werden.
+     */
     protected static final int SIGNIFICANT_AREA_TO_DETECT = 60;
+
+    /**
+     * Grenze, damit aneinanderliegende Objekte miteinander kombiniert werden.
+     */
     protected static final int INTERSECTION_THRESHOLD = 40;
 
-    protected static final Color UNMODIFIED_PIXEL_RGB = Color.white;
+    /**
+     * Farbe von nicht modifizierten Pixeln.
+     */
+    protected static final Color UNMODIFIED_PIXEL_COLOR = Color.white;
 
-    protected static final Color MODIFIED_PIXEL_RGB = Color.black;
+    /**
+     * Farbe von modifizierten Pixeln.
+     */
+    protected static final Color MODIFIED_PIXEL_COLOR = Color.black;
 
-    protected static final Color ZONE_BOUNDS_RGB = Color.blue;
+    /**
+     * Farbe für Schrift und Zonenbegrenzungen.
+     */
+    protected static final Color ZONE_BOUNDS_COLOR = Color.blue;
 
-    protected static final Color OUTLINES_RGB = Color.red;
+    /**
+     * Farbe für Objektumrandungen.
+     */
+    protected static final Color OBJECT_OUTLINE_COLOR = Color.red;
 
-    protected static final Color ZONE_TAKEN_RGB = Color.green;
+    /**
+     * Farbe für den Hintergrund von aktiven Zonen.
+     */
+    protected static final Color ACTIVE_ZONE_COLOR = Color.green;
 
+    /**
+     * Erstellt eine neue Instanz des Algorithmus.
+     * @param zones Die auszuwertenden Zonen.
+     * @return Gibt eine neue Instanz von {@link DongleAlgorithm} oder {@link OpenCvAlgorithm} zurück.
+     */
     public static Algorithm create(@NotNull Zone[] zones){
         boolean isOpenCvEnabled = ConfigurationService.getBoolean(ConfigurationService.Keys.ANALYSE_OPENCV_ENABLE);
         return isOpenCvEnabled
@@ -41,37 +70,51 @@ public abstract class Algorithm {
                 : new DongleAlgorithm(zones);
     }
 
-
+    /**
+     * Stoppt den Algorithmus und gibt alle Ressourcen frei.
+     */
     public abstract void close();
-    
-    public abstract @NotNull @UnmodifiableView Collection<? extends Zone> compute();
-    
-    public abstract BufferedImage computeImage();
 
-    protected static void renderImage(final @NotNull BufferedImage image, final @NotNull  BiPredicate<Integer, Integer> isPixelModified,  final @NotNull Zone[] zones, final @NotNull Collection<? extends Zone> zonesWithObjects, final @NotNull Collection<Outline> objectOutlines ){
+    /**
+     * Berechnet alle aktiven Zonen im aktuellen Frame und gibt diese zurück.
+     * @return Eine Collection mit allen aktiven Zonen.
+     */
+    public abstract @NotNull @UnmodifiableView Collection<? extends Zone> compute();
+
+    /**
+     * Berechnet eine grafische Auswertung des aktuellen Frames.
+     * @return Gibt die Grafische Auswertung zurück.
+     */
+    public abstract @NotNull BufferedImage computeImage();
+
+    /**
+     * Template um die grafische Ausgabe zu rendern.
+     * @param image Die Bildgrundlage, auf die gerendert werden soll.
+     * @param isPixelModified Predicate welches angibt, ob ein Pixel modifiziert ist.
+     * @param zones Die ausgewerteten Zonen.
+     * @param activeZones Die aktiven Zonen.
+     * @param objects Alle Umrisse von erkannten Objekten.
+     */
+    protected static void renderImage(final @NotNull BufferedImage image, final @NotNull  BiPredicate<Integer, Integer> isPixelModified,  final @NotNull Zone[] zones, final @NotNull @UnmodifiableView Collection<? extends Zone> activeZones, final @NotNull @UnmodifiableView Collection<Outline> objects ){
         final Graphics graphics = image.getGraphics();
-        graphics.setColor(UNMODIFIED_PIXEL_RGB);
+        graphics.setColor(UNMODIFIED_PIXEL_COLOR);
         graphics.fillRect(0,0,image.getWidth(), image.getHeight());
 
-        graphics.setColor(ZONE_TAKEN_RGB);
-        zonesWithObjects.forEach(it -> {
-            graphics.fillRect(it.x(), it.y(), it.width(), it.height());
-        });
+        graphics.setColor(ACTIVE_ZONE_COLOR);
+        activeZones.forEach(it -> graphics.fillRect(it.x(), it.y(), it.width(), it.height()));
 
-        graphics.setColor(MODIFIED_PIXEL_RGB);
-        objectOutlines.forEach(it -> {
-            IntStream.rangeClosed(it.x(), it.endX())
-                    .forEach(x ->
-                            IntStream.rangeClosed(it.y(), it.endY())
-                                    .filter(y -> isPixelModified.test(x,y))
-                                    .forEach(y -> graphics.fillRect(x,y,1,1))
-                    );
-        });
+        graphics.setColor(MODIFIED_PIXEL_COLOR);
+        objects.forEach(it -> IntStream.rangeClosed(it.x(), it.endX())
+                .forEach(x ->
+                        IntStream.rangeClosed(it.y(), it.endY())
+                                .filter(y -> isPixelModified.test(x,y))
+                                .forEach(y -> graphics.fillRect(x,y,1,1))
+                ));
 
-        graphics.setColor(OUTLINES_RGB);
-        objectOutlines.forEach(it -> graphics.drawRect(it.x(), it.y(), it.width(), it.height()));
+        graphics.setColor(OBJECT_OUTLINE_COLOR);
+        objects.forEach(it -> graphics.drawRect(it.x(), it.y(), it.width(), it.height()));
 
-        graphics.setColor(ZONE_BOUNDS_RGB);
+        graphics.setColor(ZONE_BOUNDS_COLOR);
         Arrays.stream(zones).forEach(it -> {
             graphics.drawRect(it.x(), it.y(), it.width(), it.height());
             graphics.drawString(Integer.toString(it.nr()), it.x() + 5, it.y() + 10);
@@ -81,7 +124,14 @@ public abstract class Algorithm {
         graphics.dispose();
     }
 
-    protected static <E extends Outline> Stream<E> findZonesWithObject(final E[] zones, Collection<Outline> objects){
+    /**
+     * Findet alle aktiven Zonen. Eine Zone ist aktiv, wenn mindestens ein Objekt in ihr liegt.
+     * @param zones Die zu prüfenden Zonen.
+     * @param objects Die erkannten Objekte.
+     * @return Gibt einen Stream mit aktiven Zonen zurück,.
+     * @param <E> Der Typ Zone.
+     */
+    protected static @NotNull <E extends Outline> Stream<E> findActiveZones(final E[] zones, Collection<Outline> objects){
         return objects.parallelStream()
                 .map(object -> {
                     E maxZone = null;

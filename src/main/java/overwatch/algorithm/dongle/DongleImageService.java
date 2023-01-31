@@ -2,7 +2,6 @@ package overwatch.algorithm.dongle;
 
 import overwatch.model.Capture;
 import overwatch.service.ConfigurationService;
-import overwatch.skeleton.Image;
 
 import javax.imageio.ImageIO;
 import java.awt.*;
@@ -12,14 +11,17 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Logger;
 
+/**
+ * Service für den {@link DongleAlgorithm} um auf Bilddaten zuzugreifen.
+ */
 class DongleImageService {
     private static final Logger logger = Logger.getLogger(DongleImageService.class.getName());
-    private static final Map<String, Image> sourceImageMap = new ConcurrentHashMap<>();
-    private static final Map<String, Image> currentImageMap = new ConcurrentHashMap<>();
+    private static final Map<String, DongleImage> sourceImageMap = new ConcurrentHashMap<>();
+    private static final Map<String, DongleImage> currentImageMap = new ConcurrentHashMap<>();
 
     private DongleImageService() {}
 
-    static Image readImageFromIO(Capture capture, boolean isSourceImage) throws Exception {
+    static DongleImage readImageFromIO(Capture capture, boolean isSourceImage) throws Exception {
         boolean isVirtual = capture.isVirtual();
         final var imagePath = !isVirtual
                 ? ConfigurationService.getString(ConfigurationService.Keys.IMAGE_BASE_PATH) + "/" +  capture.deviceName().replace("/", "_") + ".png"
@@ -38,7 +40,7 @@ class DongleImageService {
 
         if(image.getWidth() != capture.width() || image.getHeight() != capture.height()) {
             if (isSourceImage)
-                logger.warning("Image-Dimension of device: '" + capture.deviceName() +"' does not match size of capture. Picture will be scaled.");
+                logger.warning("DongleImage-Dimension of device: '" + capture.deviceName() +"' does not match size of capture. Picture will be scaled.");
 
             BufferedImage scaled = new BufferedImage(capture.width(), capture.height(), image.getType());
             Graphics2D g = scaled.createGraphics();
@@ -50,11 +52,11 @@ class DongleImageService {
             image.flush();
             image = scaled;
         }
-        return new Image.BackedImage(image);
+        return new DongleImage.BackedImage(image);
     }
 
-    static Image createBlank(int width, int height) {
-        return new Image.BlankImage(width, height);
+    private static DongleImage createBlank(int width, int height) {
+        return new DongleImage.BlankImage(width, height);
     }
 
     /**
@@ -63,14 +65,14 @@ class DongleImageService {
      */
     static void updateSourceImage(Capture capture){
         try {
-            Image oldImage = sourceImageMap.put(capture.deviceName(), readImageFromIO(capture, true));
+            DongleImage oldImage = sourceImageMap.put(capture.deviceName(), readImageFromIO(capture, true));
             if(oldImage != null)
                 oldImage.flush();
         } catch (Exception e) {
             logger.severe(e.getMessage());
             if (sourceImageMap.containsKey(capture.deviceName())) return;
 
-            Image oldImage = sourceImageMap.put(capture.deviceName(), createBlank(capture.width(), capture.height()));
+            DongleImage oldImage = sourceImageMap.put(capture.deviceName(), createBlank(capture.width(), capture.height()));
             if(oldImage != null)
                 oldImage.flush();
         }
@@ -82,7 +84,7 @@ class DongleImageService {
      */
     static void updateCurrentImage(Capture capture) {
         try {
-            Image oldImage = currentImageMap.put(capture.deviceName(), readImageFromIO(capture, false));
+            DongleImage oldImage = currentImageMap.put(capture.deviceName(), readImageFromIO(capture, false));
             if(oldImage != null)
                 oldImage.flush();
         }
@@ -90,7 +92,7 @@ class DongleImageService {
             logger.severe(e.getMessage());
             if(currentImageMap.containsKey(capture.deviceName())) return;
 
-            Image oldImage = currentImageMap.put(capture.deviceName(), createBlank(capture.width(), capture.height()));
+            DongleImage oldImage = currentImageMap.put(capture.deviceName(), createBlank(capture.width(), capture.height()));
             if(oldImage != null)
                 oldImage.flush();
         }
@@ -101,8 +103,8 @@ class DongleImageService {
      * @param capture Das verknüpfte Videogerät.
      * @return Gibt das aktuelle Referenzbild aus.
      */
-    static Image readCurrentImage(Capture capture){
-        Image image = currentImageMap.get(capture.deviceName());
+    static DongleImage readCurrentImage(Capture capture){
+        DongleImage image = currentImageMap.get(capture.deviceName());
         return image == null ? createBlank(capture.width(), capture.height()) : image;
     }
 
@@ -111,8 +113,8 @@ class DongleImageService {
      * @param capture Das verknüpfte Videogerät.
      * @return Gibt das aktuelle Referenzbild aus.
      */
-    static Image readSourceImage(Capture capture){
-        Image image = sourceImageMap.get(capture.deviceName());
+    static DongleImage readSourceImage(Capture capture){
+        DongleImage image = sourceImageMap.get(capture.deviceName());
         return image == null ? createBlank(capture.width(), capture.height()) : image;
     }
 }

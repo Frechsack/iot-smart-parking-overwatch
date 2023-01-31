@@ -19,17 +19,37 @@ import static overwatch.skeleton.Outline.of;
 
 public final class DongleAlgorithm extends Algorithm {
 
+    private static final int SKIP_PIXELS = 25;
+
+    /**
+     * Die Auszuwertenden Captures.
+     */
     private final @NotNull Capture[] captures;
 
+    /**
+     * Die Auszuwertenden Zonen.
+     */
     private final @NotNull DongleProcessableZone[] zones;
 
+    /**
+     * Grundlage für das zu rendernde Bild.
+     */
     private final @NotNull BufferedImage image;
 
+    /**
+     * Der auszuwertende Rahmen.
+     */
     private final @NotNull Outline outerBounds;
 
+    /**
+     * Collection mit allen erkannten Objekten im aktuellen Frame.
+     */
     private volatile @NotNull @UnmodifiableView Collection<Outline> objects = List.of();
 
-    private volatile @NotNull @UnmodifiableView Collection<? extends Zone> zonesWithObjects = List.of();
+    /**
+     * Collection mit allen aktiven Zonen. Eine Zone ist aktiv, wenn mindestens ein Objekt in ihr liegt.
+     */
+    private volatile @NotNull @UnmodifiableView Collection<? extends Zone> activeZones = List.of();
 
     public DongleAlgorithm(@NotNull Zone[] zones) {
         super();
@@ -54,15 +74,15 @@ public final class DongleAlgorithm extends Algorithm {
     @Override
     public synchronized @NotNull @UnmodifiableView Collection<? extends Zone> compute() {
         Arrays.stream(zones).parallel().forEach(DongleProcessableZone::reset);
-        updateOutlines();
-        updateZonesWithObjects();
-        return zonesWithObjects;
+        updateObjects();
+        updateActiveZones();
+        return activeZones;
     }
 
     @Override
-    public synchronized BufferedImage computeImage() {
+    public synchronized @NotNull BufferedImage computeImage() {
         final @Nullable @UnmodifiableView Collection<Outline> outlines = this.objects;
-        final @Nullable @UnmodifiableView Collection<? extends Zone> zonesWithObjects = this.zonesWithObjects;
+        final @Nullable @UnmodifiableView Collection<? extends Zone> zonesWithObjects = this.activeZones;
         final BiPredicate<Integer, Integer> isPixelModified = (x,y) -> calculatePixelState(x,y, null).isModified;
 
         Arrays.stream(captures).parallel().forEach(DongleImageService::updateCurrentImage);
@@ -168,18 +188,31 @@ public final class DongleAlgorithm extends Algorithm {
         return of(minX, minY, maxX - minX, maxY - minY);
     }
 
+    /**
+     * Findet ein Objekt an der angegebenen Position. Sollte an dieser Position kein Objekt liegen, wird ein Objekt mit der Größe 1x1 zurückgegeben.
+     * @param x Die Position auf der x-Achse.
+     * @param y Die Position auf der y-Achse.
+     * @param shortcut Ein optionaler Parameter um schnellere Abfragen durchzuführen.
+     * @return Gibt den Umriss eines Objekts zurück.
+     */
     private @NotNull Outline findObjectBounds(final int x, final int y, @Nullable final DongleProcessableZone shortcut){
         final Outline upperOutline = walkDown(x, y, shortcut);
         final Outline lowerOutline = walkUp(x, y, shortcut);
         return Outline.compose(upperOutline, lowerOutline);
     }
 
-    private void updateZonesWithObjects(){
-        this.zonesWithObjects = findZonesWithObject(this.zones, this.objects).toList();
+    /**
+     * Aktualisiert atomar alle aktiven Zonen und speichert diese in {@link #activeZones}.
+     */
+    private void updateActiveZones(){
+        this.activeZones = findActiveZones(this.zones, this.objects).toList();
     }
 
-    private void updateOutlines(){
-        final List<Outline> outlines = Arrays.stream(zones)
+    /**
+     * Aktualisiert atomar alle Objekte und speichert diese in {@link #objects}.
+     */
+    private void updateObjects(){
+        final List<Outline> objects = Arrays.stream(zones)
                 .parallel()
                 .flatMap(zone -> IntStream.iterate(zone.x(), x -> x + SKIP_PIXELS <= zone.endX(), x -> x + SKIP_PIXELS)
                         .boxed()
@@ -190,20 +223,20 @@ public final class DongleAlgorithm extends Algorithm {
                                 .filter(outline -> outline.area() >= SIGNIFICANT_AREA_TO_DETECT)
                         ))
                 .collect(Collectors.toList());
-        for (int i = 0; i < outlines.size(); i++){
-            Outline a = outlines.get(i);
-            for (int y = i; y < outlines.size(); y++) {
-                Outline b = outlines.get(y);
+        for (int i = 0; i < objects.size(); i++){
+            Outline a = objects.get(i);
+            for (int y = i; y < objects.size(); y++) {
+                Outline b = objects.get(y);
                 if(a == b)
                     continue;
                 if(!isIntersecting(a, b, INTERSECTION_THRESHOLD))
                     continue;
                 a = Outline.compose(a, b);
-                outlines.remove(y--);
+                objects.remove(y--);
             }
-            outlines.set(i, a);
+            objects.set(i, a);
         }
-        this.objects = Collections.unmodifiableList(outlines);
+        this.objects = Collections.unmodifiableList(objects);
     }
 
     /**
