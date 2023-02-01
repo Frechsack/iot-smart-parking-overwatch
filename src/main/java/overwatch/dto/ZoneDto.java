@@ -18,6 +18,14 @@ public class ZoneDto {
     @JsonProperty(required = true)
     private String deviceName;
 
+    public ZoneDto(int offsetX, int offsetY, int width, int height, String deviceName) {
+        this.offsetX = offsetX;
+        this.offsetY = offsetY;
+        this.width = width;
+        this.height = height;
+        this.deviceName = deviceName;
+    }
+
     public ZoneDto() {
     }
 

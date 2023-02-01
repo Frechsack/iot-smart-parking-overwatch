@@ -77,7 +77,7 @@ public interface Outline extends Position, Size {
         int endY = Math.min(a.endY(), b.endY());
         int width = endX - x;
         int height = endY - y;
-        return width * height;
+        return (width + 1) * (height + 1);
     }
 
     /**

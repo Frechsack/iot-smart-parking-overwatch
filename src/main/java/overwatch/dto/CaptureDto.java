@@ -18,6 +18,13 @@ public class CaptureDto {
     public CaptureDto() {
     }
 
+    public CaptureDto(int x, int y, int width, int height) {
+        this.x = x;
+        this.y = y;
+        this.width = width;
+        this.height = height;
+    }
+
     public int getX() {
         return x;
     }
