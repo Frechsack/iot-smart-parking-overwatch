@@ -6,7 +6,7 @@
 
     <groupId>overwatch</groupId>
     <artifactId>iot-smart-parking-overwatch</artifactId>
-    <version>1.0</version>
+    <version>rolling</version>
     <packaging>jar</packaging>
 
     <properties>
