@@ -1,12 +1,26 @@
 package overwatch;
 
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
 import overwatch.model.Zone;
 
 import static org.junit.Assert.*;
 
 public class EngineTest {
+
+    @Before
+    public void awaitEngineCancel(){
+        Engine.cancel();
+        long startTimestamp = System.currentTimeMillis();
+        while (System.currentTimeMillis() - startTimestamp < 2000 && !Engine.isStopped()){
+            try {
+                Thread.sleep(10L);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+        }
+    }
 
     @Test
     public void isRunning() {
