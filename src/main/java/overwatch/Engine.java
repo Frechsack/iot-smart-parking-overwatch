@@ -5,7 +5,6 @@ import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.UnmodifiableView;
 import overwatch.algorithm.Algorithm;
 import overwatch.debug.DebugFrame;
-import overwatch.model.Capture;
 import overwatch.model.Zone;
 import overwatch.service.*;
 
@@ -19,8 +18,14 @@ import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+/**
+ * Engine welche eine Instanz für den Bewegungserkennungsalgorithmus steuert.
+ */
 public class Engine {
 
+    /**
+     * Interner Hook um einen Algorithmus zu stoppen.
+     */
     private static final class CancelHock implements BooleanSupplier {
 
         private boolean isCanceled = false;
@@ -55,22 +60,37 @@ public class Engine {
                 : null;
     }
 
+    /**
+     * Prüft, ob der Algorithmus aktuell läuft.
+     * @return Gibt {@code true} zurück, wenn der Algorithmus läuft, sonst {@code false}.
+     */
     public static boolean isRunning(){
         final Thread engineThread = Engine.engineThread;
         return engineThread != null && engineThread.isAlive();
     }
 
+    /**
+     * Prüft, ob der Algorithmus aktuell gestoppt ist.
+     * @return Gibt {@code true} zurück, wenn der Algorithmus läuft, sonst {@code false}.
+     */
     public static boolean isStopped(){
         final Thread engineThread = Engine.engineThread;
         return engineThread == null || !engineThread.isAlive();
     }
 
+    /**
+     * Prüft, ob der Algorithmus abgebrochen werden soll. Dieser Zustand ist erreicht, wenn der Algorithmus läuft und {@link #cancel()} aufgerufen wurde.
+     * @return Gibt {@code true} zurück, wenn der Algorithmus abgebrochen werden soll, sonst {@code false}.
+     */
     public static boolean isCanceled(){
         if(isStopped()) return false;
         final CancelHock cancelHock = Engine.engineCancelHook;
         return cancelHock != null && cancelHock.isCanceled;
     }
 
+    /**
+     * Stoppt den aktuellen Algorithmus, sollte dieser aktuell laufen.
+     */
     public static void cancel(){
         if(isStopped()) return;
         threadModificationLock.lock();
@@ -80,6 +100,11 @@ public class Engine {
         threadModificationLock.unlock();
     }
 
+    /**
+     * Startet eine neue Instanz des Algorithmus. Sollte aktuell ein Algorithmus laufen, wird dieser abgebrochen {@link #cancel()}.
+     * Es wird nicht auf den Abbruch gewartet, es wird sofort eine neue Instanz gestartet.
+     * @param zones Die auszuwertenden Zonen.
+     */
     public static void start(Zone[] zones) {
         threadModificationLock.lock();
         long startTimestamp = System.currentTimeMillis();
@@ -103,6 +128,11 @@ public class Engine {
             debugFrame.updateZones(zones);
     }
 
+    /**
+     * Liest das aktuelle Bild aus dem laufenden Algorithmus aus.
+     * Sollte aktuell kein Algorithmus laufen, wird ein leeres Bild mit einer Größe von 1x1 ausgegeben.
+     * @return Gibt das aktuelle Bild zurück.
+     */
     public static BufferedImage getGeneratedImage(){
         final EngineTask engineTask = Engine.engineTask;
         return isRunning() && engineTask != null
@@ -110,16 +140,31 @@ public class Engine {
                 : new BufferedImage(1,1, BufferedImage.TYPE_INT_RGB);
     }
 
+    /**
+     * Abstrahierung für einen Thread.
+     */
     private static class EngineTask implements Runnable {
 
         private final long iterationInterval;
 
+        /**
+         * Callback um zu prüfen, ob dieser Task abgebrochen wurde.
+         */
         private final @NotNull BooleanSupplier isCanceled;
 
+        /**
+         * Der Anzuwendende Algorithmus.
+         */
         private final @NotNull Algorithm algorithm;
 
+        /**
+         * Liste mit aktiven Zonen in der letzten Iteration.
+         */
         private @NotNull @UnmodifiableView Collection<? extends Zone> activeZones = Set.of();
 
+        /**
+         * Array mit Listen der letzten aktiven Zonen. Anhand dieser wird geprüft, ob und wie sich die Elemente in {@link #activeZones} verändert haben.
+         */
         @SuppressWarnings("unchecked")
         private final Collection<? extends Zone>[] activeZonesStack =
                 (Collection<? extends Zone>[]) IntStream.range(0, calculateHistorySize()).boxed().map(it -> List.of()).toArray(Collection[]::new);
@@ -141,13 +186,18 @@ public class Engine {
             return 4;
         }
 
+        /**
+         * Vergleicht zwei Collections miteinander.
+         * Zwei Collections sind identisch, wenn alle Elemente aus a in b und alle Elemente aus b in a vorkommen.
+         * @param a Die erste Collection.
+         * @param b Die zweite Collection.
+         * @return Gibt {@code true} zurück, sollten beide Collections identisch sein.
+         */
         private boolean isEqual(Collection<?> a, Collection<?> b){
-            if(!b.containsAll(a)) return false;
-            return a.containsAll(b);
+            return b.containsAll(a) && a.containsAll(b);
         }
 
-        private synchronized void updateZones(Collection<? extends Zone> newZones){
-
+        private synchronized void updateActiveZones(Collection<? extends Zone> newZones){
             final @NotNull @UnmodifiableView Collection<? extends Zone> activeZones = this.activeZones;
             final Predicate<Zone> isInStack = zone -> {
                 for (Collection<?> stackItem : activeZonesStack) {
@@ -162,7 +212,7 @@ public class Engine {
                     .collect(Collectors.toSet());
 
             if(!isEqual(newActiveZones, activeZones)){
-                HttpService.sendZoneUpdate(newActiveZones.stream().mapToInt(Zone::nr).toArray());
+                HttpService.sendActiveZones(newActiveZones.stream().mapToInt(Zone::nr).toArray());
                 this.activeZones = Collections.unmodifiableSet(newActiveZones);
             }
 
@@ -181,7 +231,7 @@ public class Engine {
             while (!isCanceled.getAsBoolean()){
                 final long analyseBeginnTimestamp = System.currentTimeMillis();
                 final Collection<? extends Zone> newZones = algorithm.compute();
-                updateZones(newZones);
+                updateActiveZones(newZones);
                 final long analyseFinishedTimestamp = System.currentTimeMillis();
                 final long analyseDurationMillis = analyseFinishedTimestamp - analyseBeginnTimestamp;
 
@@ -199,7 +249,5 @@ public class Engine {
             }
             algorithm.close();
         }
-
-        private record ZoneCounter(Zone zone, int count){};
     }
 }

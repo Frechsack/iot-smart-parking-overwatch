@@ -2,6 +2,9 @@ package overwatch.dto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+/**
+ * Transportobjekt für eine Zone.
+ */
 public class ZoneDto {
     @JsonProperty(required = true)
     private int offsetX;

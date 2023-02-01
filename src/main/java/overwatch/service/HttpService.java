@@ -8,6 +8,9 @@ import java.util.*;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
+/**
+ * Funktionen zum senden an das Backend.
+ */
 public class HttpService {
 
     private static final Logger logger = Logger.getLogger(HttpService.class.getName());
@@ -18,9 +21,11 @@ public class HttpService {
 
     private HttpService() {}
 
-    public static void sendZoneUpdate(int[] zoneNrs){
-
-        System.out.println(Arrays.toString(zoneNrs));
+    /**
+     * Sendet eine Anfrage an den Service, um die aktiven Zonen zu aktualisieren.
+     * @param zoneNrs Die Nummern der aktiven Zonen.
+     */
+    public static void sendActiveZones(int[] zoneNrs) {
 
         final Collection<QueryParam> queryParams = new ArrayList<>(zoneNrs.length);
         for (int zoneNr : zoneNrs)
@@ -52,6 +57,6 @@ public class HttpService {
 
     }
 
-    private record QueryParam(String key, String value){};
+    private record QueryParam(String key, String value){}
 
 }

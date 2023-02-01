@@ -11,7 +11,7 @@ import static overwatch.algorithm.dongle.DongleImageService.readSourceImage;
 
 
 /**
- * Eine spezialisierte Variante von {@link Zone}, welche Pixeldaten beinhält.
+ * Eine spezialisierte Variante von {@link Zone}, welche Pixeldaten inne hat.
  */
 final class DongleProcessableZone extends Zone implements Outline {
 

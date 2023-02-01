@@ -2,6 +2,9 @@ package overwatch.dto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+/**
+ * Transportobjekt für Videogeräte.
+ */
 public class CaptureDto {
     @JsonProperty(required = true)
     private int x;
