@@ -11,7 +11,7 @@ public class DebugApplication {
         ConfigurationService.override(ConfigurationService.Keys.DEBUG_FRAME_ENABLE, "true");
 
         // 640 x 480
-        Capture c1 = new Capture(0,0,640,480, "/dev/video2");
+        Capture c1 = new Capture(0,0,640,480, "/dev/video0");
 
        // Zone z1 = new Zone(1, c1,   40,  0, 120,160);
         Zone z2 = new Zone(2, c1, 200,  100, 110,60);

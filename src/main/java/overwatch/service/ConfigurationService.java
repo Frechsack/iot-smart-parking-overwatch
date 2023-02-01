@@ -37,7 +37,7 @@ public class ConfigurationService {
 
     static {
         try {
-            properties.load(new FileReader(CONFIGURATION_PATH));
+            properties.load(ConfigurationService.class.getClassLoader().getResourceAsStream("application.properties"));
             logger.info("ConfigurationService applied");
         }
         catch (IOException e) {
