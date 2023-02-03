@@ -6,10 +6,10 @@ import fi.iki.elonen.NanoHTTPD;
 import overwatch.dto.InitDto;
 import overwatch.service.ConfigurationService;
 
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
+import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
+import java.io.*;
+import java.util.*;
 import java.util.logging.Logger;
 
 public class Server extends NanoHTTPD {
@@ -25,7 +25,7 @@ public class Server extends NanoHTTPD {
             return serveInit(session);
 
         if (session.getMethod() == Method.GET)
-            return serveImage(session);
+            return serveImage();
 
         return createError(Response.Status.METHOD_NOT_ALLOWED, "Method Not Allowed");
     }
@@ -39,9 +39,18 @@ public class Server extends NanoHTTPD {
         return createSuccessful();
     }
 
-    private Response serveImage(IHTTPSession session){
-        // TODO: Serve DongleImage
-        return createError(Response.Status.CONFLICT, "Not implemented");
+    private Response serveImage() {
+        final BufferedImage image = Engine.getGeneratedImage();
+        final ByteArrayOutputStream output = new ByteArrayOutputStream();
+
+        try {
+            ImageIO.write(image, "JPEG",output);
+        } catch (IOException e) {
+            return createError(Response.Status.INTERNAL_ERROR, "Error during image serving.");
+        }
+        final ByteArrayInputStream input = new ByteArrayInputStream(output.toByteArray());
+
+        return newFixedLengthResponse(Response.Status.OK, "/image/jpeg", input, output.size());
     }
 
     private static Optional<InitDto> readInitRequestFromSession(IHTTPSession session){
@@ -85,6 +94,41 @@ public class Server extends NanoHTTPD {
     public void start() throws IOException {
         this.start(-1, false);
         logger.info("Server is running");
+    }
+
+    private class VirtualStream {
+        private int[] storage = new int[0];
+        private int lastInsertIndex = -1;
+
+        private int lastReadIndex = -1;
+
+        private int byteSize(){
+            return lastInsertIndex +1;
+        }
+
+        private final OutputStream out = new OutputStream() {
+            @Override
+            public void write(int b) {
+                requireCapacity();
+                storage[++lastInsertIndex] = b;
+            }
+        };
+        private final InputStream in = new InputStream() {
+            @Override
+            public int read() {
+                if(lastReadIndex < lastInsertIndex)
+                    return storage[++lastReadIndex];
+                return -1;
+            }
+        };
+
+        private void requireCapacity(){
+            if(storage.length-1 > (lastInsertIndex+1))
+                return;
+            int[] storage = new int[Math.max(this.storage.length * 2, lastInsertIndex+2)];
+            System.arraycopy(this.storage, 0, storage, 0, this.storage.length);
+            this.storage = storage;
+        }
     }
 }
 

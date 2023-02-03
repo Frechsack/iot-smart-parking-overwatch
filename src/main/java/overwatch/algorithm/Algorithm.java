@@ -119,8 +119,6 @@ public abstract class Algorithm {
             graphics.drawRect(it.x(), it.y(), it.width(), it.height());
             graphics.drawString(Integer.toString(it.nr()), it.x() + 5, it.y() + 10);
         });
-
-
         graphics.dispose();
     }
 
@@ -150,5 +148,4 @@ public abstract class Algorithm {
                 .filter(Objects::nonNull)
                 .distinct();
     }
-    
 }
