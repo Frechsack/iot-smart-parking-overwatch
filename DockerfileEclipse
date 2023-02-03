@@ -12,9 +12,9 @@ RUN mvn -Djavacpp.platform.custom -Djavacpp.platform.linux-arm64 -Djavacpp.platf
 #
 # Package stage
 #
-FROM debian:bullseye-slim
+FROM eclipse-temurin:17.0.6_10-jre-jammy
 COPY --from=Build /opt/target/iot-smart-parking-overwatch-rolling-jar-with-dependencies.jar /opt/iot-smart-parking-overwatch.jar
 RUN apt-get -y update
-RUN apt-get -y install openjdk-17-jre-headless libgtk2.0-0
+RUN apt-get -y install libgtk2.0-0
 EXPOSE 8080
 ENTRYPOINT ["java","-jar","/opt/iot-smart-parking-overwatch.jar"]
