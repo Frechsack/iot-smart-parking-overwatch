@@ -25,9 +25,9 @@ public class ConfigurationService {
         String DEBUG_FRAME_ENABLE = "debug-frame";
 
         String SERVICE_UPDATE_ENDPOINT = "service-update-endpoint";
-        String SERVICE_UPDATE_KEY = "service-update-key";
+        String SERVICE_KEY = "service-key";
 
-        String OVERWATCH_INIT_KEY = "overwatch-init-key";
+        String OVERWATCH_KEY = "overwatch-key";
     }
 
     private static final String CONFIGURATION_PATH = "src/main/resources/application.properties";

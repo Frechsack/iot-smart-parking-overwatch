@@ -18,7 +18,7 @@ public class Server extends NanoHTTPD {
 
     @Override
     public Response serve(IHTTPSession session) {
-        if(!session.getHeaders().getOrDefault("key", "").equals(ConfigurationService.getString(ConfigurationService.Keys.OVERWATCH_INIT_KEY)))
+        if(!session.getHeaders().getOrDefault("key", "").equals(ConfigurationService.getString(ConfigurationService.Keys.OVERWATCH_KEY)))
             return createError(Response.Status.UNAUTHORIZED, "Wrong key");
 
         if(session.getMethod() == Method.POST)
@@ -45,7 +45,8 @@ public class Server extends NanoHTTPD {
 
         try {
             ImageIO.write(image, "JPEG",output);
-        } catch (IOException e) {
+        }
+        catch (IOException e) {
             return createError(Response.Status.INTERNAL_ERROR, "Error during image serving.");
         }
         final ByteArrayInputStream input = new ByteArrayInputStream(output.toByteArray());

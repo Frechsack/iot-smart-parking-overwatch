@@ -34,7 +34,7 @@ public class HttpService {
         try {
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(buildUri(queryParams))
-                    .header("key", ConfigurationService.getString(ConfigurationService.Keys.SERVICE_UPDATE_KEY))
+                    .header("key", ConfigurationService.getString(ConfigurationService.Keys.SERVICE_KEY))
                     .PUT(HttpRequest.BodyPublishers.noBody())
                     .build();
             HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
