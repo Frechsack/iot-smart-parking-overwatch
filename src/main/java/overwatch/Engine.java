@@ -100,6 +100,20 @@ public class Engine {
         threadModificationLock.unlock();
     }
 
+    public static void awaitCanceled(final long timeout){
+        if(isStopped()) return;
+        threadModificationLock.lock();
+        cancel();
+        final long startTimestamp = System.currentTimeMillis();
+        while (System.currentTimeMillis() - startTimestamp < timeout && !Engine.isStopped())
+            try {
+                Thread.sleep(5L);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+        threadModificationLock.unlock();
+    }
+
     /**
      * Startet eine neue Instanz des Algorithmus. Sollte aktuell ein Algorithmus laufen, wird dieser abgebrochen {@link #cancel()}.
      * Es wird nicht auf den Abbruch gewartet, es wird sofort eine neue Instanz gestartet.
@@ -108,7 +122,7 @@ public class Engine {
     public static void start(Zone[] zones) {
         threadModificationLock.lock();
         long startTimestamp = System.currentTimeMillis();
-        cancel();
+        awaitCanceled(5000);
         // Setze neue Engine auf.
         final CancelHock engineCancelHook = new CancelHock();
         final EngineTask engineTask = new EngineTask(zones, engineCancelHook);
