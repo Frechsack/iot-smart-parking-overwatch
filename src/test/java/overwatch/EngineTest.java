@@ -11,15 +11,7 @@ public class EngineTest {
 
     @Before
     public void awaitEngineCancel(){
-        Engine.cancel();
-        long startTimestamp = System.currentTimeMillis();
-        while (System.currentTimeMillis() - startTimestamp < 2000 && !Engine.isStopped()){
-            try {
-                Thread.sleep(10L);
-            } catch (InterruptedException e) {
-                throw new RuntimeException(e);
-            }
-        }
+        Engine.awaitCanceled(10000);
     }
 
     @Test
