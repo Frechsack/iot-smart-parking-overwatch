@@ -51,7 +51,9 @@ public class Server extends NanoHTTPD {
         }
         final ByteArrayInputStream input = new ByteArrayInputStream(output.toByteArray());
 
-        return newFixedLengthResponse(Response.Status.OK, "/image/jpeg", input, output.size());
+        Response response = newFixedLengthResponse(Response.Status.OK, "/image/jpeg", input, output.size());
+        response.addHeader("content-type", "image/jpeg");
+        return response;
     }
 
     private static Optional<InitDto> readInitRequestFromSession(IHTTPSession session){
@@ -97,39 +99,5 @@ public class Server extends NanoHTTPD {
         logger.info("Server is running");
     }
 
-    private class VirtualStream {
-        private int[] storage = new int[0];
-        private int lastInsertIndex = -1;
-
-        private int lastReadIndex = -1;
-
-        private int byteSize(){
-            return lastInsertIndex +1;
-        }
-
-        private final OutputStream out = new OutputStream() {
-            @Override
-            public void write(int b) {
-                requireCapacity();
-                storage[++lastInsertIndex] = b;
-            }
-        };
-        private final InputStream in = new InputStream() {
-            @Override
-            public int read() {
-                if(lastReadIndex < lastInsertIndex)
-                    return storage[++lastReadIndex];
-                return -1;
-            }
-        };
-
-        private void requireCapacity(){
-            if(storage.length-1 > (lastInsertIndex+1))
-                return;
-            int[] storage = new int[Math.max(this.storage.length * 2, lastInsertIndex+2)];
-            System.arraycopy(this.storage, 0, storage, 0, this.storage.length);
-            this.storage = storage;
-        }
-    }
 }
 
