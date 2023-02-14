@@ -75,7 +75,7 @@ public final class OpenCvAlgorithm extends Algorithm {
                 new VideoCapture(Integer.parseInt(capture.deviceName().substring(capture.deviceName().lastIndexOf("o")+1))),
                 new Mat(),
                 new Mat(),
-                createBackgroundSubtractorMOG2(1000000000,256,true));
+                createBackgroundSubtractorMOG2(1000,150,true));
     }
 
     @Override
